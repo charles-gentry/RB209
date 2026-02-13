@@ -15,7 +15,7 @@ SNS_LOOKUP: dict[tuple[str, str, str], int] = {
     ("low", "light", "low"): 1,
     ("low", "light", "medium"): 0,
     ("low", "light", "high"): 0,
-    ("low", "medium", "low"): 2,
+    ("low", "medium", "low"): 1,
     ("low", "medium", "medium"): 1,
     ("low", "medium", "high"): 1,
     ("low", "heavy", "low"): 2,

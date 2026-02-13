@@ -83,7 +83,7 @@ ORGANIC_MATERIAL_INFO: dict[str, dict] = {
         "name": "Pig Slurry (4% DM)",
         "unit": "m3",
         "total_n": 3.6,
-        "available_n": 1.4,
+        "available_n": 2.167,
         "p2o5": 2.0,
         "k2o": 1.6,
         "mgo": 0.5,
