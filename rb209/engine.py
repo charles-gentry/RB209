@@ -24,7 +24,7 @@ from rb209.data.potassium import (
     POTASSIUM_STRAW_INCORPORATED,
     POTASSIUM_STRAW_REMOVED,
 )
-from rb209.data.sns import SNS_LOOKUP
+from rb209.data.sns import SNS_LOOKUP, SNS_VALUE_TO_INDEX
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 
 
@@ -98,6 +98,61 @@ def calculate_sns(
         soil_type=soil_type,
         rainfall=rainfall,
         method="field-assessment",
+        notes=notes,
+    )
+
+
+def sns_value_to_index(sns_value: float) -> int:
+    """Convert an SNS value in kg N/ha to an SNS index using Table 4.10.
+
+    Args:
+        sns_value: Soil Nitrogen Supply in kg N/ha (must be >= 0).
+
+    Returns:
+        SNS index (0-6).
+    """
+    if sns_value < 0:
+        raise ValueError(f"SNS value must be non-negative, got {sns_value}")
+    for upper_bound, index in SNS_VALUE_TO_INDEX:
+        if sns_value <= upper_bound:
+            return index
+    return 6
+
+
+def calculate_smn_sns(smn: float, crop_n: float) -> SNSResult:
+    """Calculate Soil Nitrogen Supply index from SMN measurement.
+
+    Uses measured Soil Mineral Nitrogen (0-90 cm depth) and estimated
+    crop nitrogen at the time of sampling to determine total SNS,
+    then converts to an SNS index via Table 4.10.
+
+    Args:
+        smn: Soil Mineral Nitrogen measured in the lab (kg N/ha, 0-90 cm).
+        crop_n: Estimated nitrogen in the crop at sampling time (kg N/ha).
+
+    Returns:
+        SNSResult with method="smn" and the calculated SNS index.
+    """
+    if smn < 0:
+        raise ValueError(f"SMN must be non-negative, got {smn}")
+    if crop_n < 0:
+        raise ValueError(f"Crop N must be non-negative, got {crop_n}")
+
+    total_sns = smn + crop_n
+    sns_index = sns_value_to_index(total_sns)
+
+    notes = [
+        f"SMN (0-90 cm) = {smn:.0f} kg N/ha.",
+        f"Crop N = {crop_n:.0f} kg N/ha.",
+        f"Total SNS = {total_sns:.0f} kg N/ha (Table 4.10 -> Index {sns_index}).",
+    ]
+
+    return SNSResult(
+        sns_index=sns_index,
+        method="smn",
+        smn=smn,
+        crop_n=crop_n,
+        sns_value=total_sns,
         notes=notes,
     )
 

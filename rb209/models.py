@@ -153,8 +153,11 @@ class LimeRecommendation:
 class SNSResult:
     """Soil Nitrogen Supply calculation result."""
     sns_index: int
-    previous_crop: str
-    soil_type: str
-    rainfall: str
+    previous_crop: str = ""
+    soil_type: str = ""
+    rainfall: str = ""
     method: str = "field-assessment"
+    smn: float | None = None
+    crop_n: float | None = None
+    sns_value: float | None = None
     notes: list[str] = field(default_factory=list)

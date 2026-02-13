@@ -67,3 +67,16 @@ SNS_LOOKUP: dict[tuple[str, str, str], int] = {
     ("very-high", "organic", "medium"): 5,
     ("very-high", "organic", "high"): 4,
 }
+
+# Table 4.10: SNS value (kg N/ha) to SNS index.
+# Each tuple is (upper_bound_inclusive, sns_index).
+# Evaluated in order; first match wins.
+SNS_VALUE_TO_INDEX: list[tuple[float, int]] = [
+    (60, 0),
+    (80, 1),
+    (100, 2),
+    (120, 3),
+    (160, 4),
+    (240, 5),
+    (float("inf"), 6),
+]

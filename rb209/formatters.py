@@ -76,13 +76,21 @@ def format_sns(result: SNSResult, fmt: str = "table") -> str:
     if fmt == "json":
         return json.dumps(asdict(result), indent=2)
 
-    rows = [
-        ("SNS Index", str(result.sns_index)),
-        ("Previous crop", result.previous_crop),
-        ("Soil type", result.soil_type),
-        ("Rainfall", result.rainfall),
-        ("Method", result.method),
-    ]
+    rows = [("SNS Index", str(result.sns_index))]
+
+    if result.method == "smn":
+        if result.smn is not None:
+            rows.append(("SMN (0-90 cm)", f"{result.smn:.0f} kg N/ha"))
+        if result.crop_n is not None:
+            rows.append(("Crop N", f"{result.crop_n:.0f} kg N/ha"))
+        if result.sns_value is not None:
+            rows.append(("Total SNS", f"{result.sns_value:.0f} kg N/ha"))
+    else:
+        rows.append(("Previous crop", result.previous_crop))
+        rows.append(("Soil type", result.soil_type))
+        rows.append(("Rainfall", result.rainfall))
+
+    rows.append(("Method", result.method))
     return _box("Soil Nitrogen Supply (SNS)", rows, result.notes)
 
 

@@ -12,7 +12,13 @@ timing/incorporation adjustment factors, crop history) are marked with
 
 import unittest
 
-from rb209.engine import calculate_organic, calculate_sns, recommend_nitrogen
+from rb209.engine import (
+    calculate_organic,
+    calculate_smn_sns,
+    calculate_sns,
+    recommend_nitrogen,
+    sns_value_to_index,
+)
 from rb209.models import (
     NResidueCategory,
     PREVIOUS_CROP_N_CATEGORY,
@@ -118,15 +124,18 @@ class TestRB209Examples(unittest.TestCase):
         """Winter wheat (feed) at SNS 4 -> 120 kg N/ha (Table 4.17, medium soil)."""
         self.assertEqual(recommend_nitrogen("winter-wheat-feed", 4), 120)
 
-    @unittest.skip("SMN (Soil Mineral Nitrogen) measurement method not implemented")
     def test_example_4_3_smn_method(self):
-        """SMN = 115, crop N = 25, total SNS = 140 kg N/ha.
-        Requires a calculate_smn_sns() function or equivalent.
-        """
+        """SMN = 115, crop N = 25, total SNS = 140 kg N/ha."""
+        result = calculate_smn_sns(smn=115, crop_n=25)
+        self.assertEqual(result.sns_index, 4)
+        self.assertEqual(result.method, "smn")
+        self.assertEqual(result.smn, 115)
+        self.assertEqual(result.crop_n, 25)
+        self.assertEqual(result.sns_value, 140)
 
-    @unittest.skip("Table 4.10 (SNS value to SNS index conversion) not implemented")
     def test_example_4_3_table_4_10(self):
         """SNS value of 140 kg N/ha should convert to SNS Index 4."""
+        self.assertEqual(sns_value_to_index(140), 4)
 
     @unittest.skip("Soil-type-specific nitrogen recommendations not implemented")
     def test_example_4_3_soil_specific_nitrogen(self):
