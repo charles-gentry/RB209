@@ -12,7 +12,7 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("winter-wheat-feed", 1): 180,
     ("winter-wheat-feed", 2): 150,
     ("winter-wheat-feed", 3): 120,
-    ("winter-wheat-feed", 4): 80,
+    ("winter-wheat-feed", 4): 120,
     ("winter-wheat-feed", 5): 40,
     ("winter-wheat-feed", 6): 0,
 
@@ -44,7 +44,7 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("winter-barley", 6): 0,
 
     # Spring Barley
-    ("spring-barley", 0): 150,
+    ("spring-barley", 0): 160,
     ("spring-barley", 1): 120,
     ("spring-barley", 2): 100,
     ("spring-barley", 3): 80,
@@ -126,7 +126,7 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
 
     # Sugar Beet
     ("sugar-beet", 0): 120,
-    ("sugar-beet", 1): 100,
+    ("sugar-beet", 1): 120,
     ("sugar-beet", 2): 80,
     ("sugar-beet", 3): 50,
     ("sugar-beet", 4): 0,

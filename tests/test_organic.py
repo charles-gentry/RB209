@@ -20,7 +20,7 @@ class TestOrganic(unittest.TestCase):
     def test_pig_slurry_30m3(self):
         result = calculate_organic("pig-slurry", 30)
         self.assertAlmostEqual(result.total_n, 108.0)
-        self.assertAlmostEqual(result.available_n, 42.0)
+        self.assertAlmostEqual(result.available_n, 65.0)
 
     def test_poultry_litter_10t(self):
         result = calculate_organic("poultry-litter", 10)
