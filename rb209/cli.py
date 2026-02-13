@@ -9,6 +9,7 @@ from rb209.data.organic import ORGANIC_MATERIAL_INFO
 from rb209.engine import (
     calculate_lime,
     calculate_organic,
+    calculate_smn_sns,
     calculate_sns,
     recommend_all,
     recommend_nitrogen,
@@ -86,6 +87,11 @@ def _handle_sulfur(args: argparse.Namespace) -> None:
 
 def _handle_sns(args: argparse.Namespace) -> None:
     result = calculate_sns(args.previous_crop, args.soil_type, args.rainfall)
+    print(format_sns(result, args.output_format))
+
+
+def _handle_sns_smn(args: argparse.Namespace) -> None:
+    result = calculate_smn_sns(args.smn, args.crop_n)
     print(format_sns(result, args.output_format))
 
 
@@ -211,6 +217,17 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Excess winter rainfall category")
     _add_format_arg(p_sns)
     p_sns.set_defaults(func=_handle_sns)
+
+    # ── sns-smn ─────────────────────────────────────────────────
+    p_smn = subparsers.add_parser(
+        "sns-smn", help="Calculate SNS index from SMN measurement",
+    )
+    p_smn.add_argument("--smn", required=True, type=float,
+                        help="Soil Mineral Nitrogen (0-90 cm, kg N/ha)")
+    p_smn.add_argument("--crop-n", required=True, type=float,
+                        help="Estimated crop N at sampling (kg N/ha)")
+    _add_format_arg(p_smn)
+    p_smn.set_defaults(func=_handle_sns_smn)
 
     # ── organic ──────────────────────────────────────────────────
     p_org = subparsers.add_parser(
