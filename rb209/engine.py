@@ -16,7 +16,7 @@ from rb209.models import (
 from rb209.data.crops import CROP_INFO
 from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION
 from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS
-from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS
+from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC
 from rb209.data.organic import ORGANIC_MATERIAL_INFO
 from rb209.data.phosphorus import PHOSPHORUS_RECOMMENDATIONS
 from rb209.data.potassium import (
@@ -159,15 +159,36 @@ def calculate_smn_sns(smn: float, crop_n: float) -> SNSResult:
 
 # ── Nitrogen ────────────────────────────────────────────────────────
 
-def recommend_nitrogen(crop: str, sns_index: int) -> float:
+def recommend_nitrogen(
+    crop: str, sns_index: int, soil_type: str | None = None
+) -> float:
     """Return nitrogen recommendation in kg N/ha.
 
     Args:
         crop: Crop value string.
         sns_index: Soil Nitrogen Supply index (0-6).
+        soil_type: Optional soil type for soil-specific recommendations.
+            When provided, uses Table 4.17 (and similar) soil-specific data.
+            When omitted, uses the generic recommendation table.
     """
     _validate_crop(crop)
     _validate_index("SNS index", sns_index, 0, 6)
+
+    if soil_type is not None:
+        try:
+            SoilType(soil_type)
+        except ValueError:
+            valid = ", ".join(s.value for s in SoilType)
+            raise ValueError(
+                f"Unknown soil type '{soil_type}'. Valid options: {valid}"
+            )
+        soil_key = (crop, sns_index, soil_type)
+        if soil_key in NITROGEN_SOIL_SPECIFIC:
+            return NITROGEN_SOIL_SPECIFIC[soil_key]
+        raise ValueError(
+            f"No soil-specific nitrogen data for crop '{crop}' "
+            f"at SNS {sns_index} on {soil_type} soil"
+        )
 
     key = (crop, sns_index)
     if key not in NITROGEN_RECOMMENDATIONS:
@@ -261,6 +282,7 @@ def recommend_all(
     k_index: int,
     mg_index: int = 2,
     straw_removed: bool = True,
+    soil_type: str | None = None,
 ) -> NutrientRecommendation:
     """Return a full nutrient recommendation for a crop.
 
@@ -271,10 +293,11 @@ def recommend_all(
         k_index: Soil K index (0-9).
         mg_index: Soil Mg index (0-9). Defaults to 2 (target).
         straw_removed: For cereals — True if straw removed.
+        soil_type: Optional soil type for soil-specific N recommendations.
     """
     _validate_crop(crop)
 
-    n = recommend_nitrogen(crop, sns_index)
+    n = recommend_nitrogen(crop, sns_index, soil_type)
     p = recommend_phosphorus(crop, p_index)
     k = recommend_potassium(crop, k_index, straw_removed)
     mg = recommend_magnesium(mg_index)

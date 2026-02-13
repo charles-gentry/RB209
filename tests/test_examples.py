@@ -137,11 +137,11 @@ class TestRB209Examples(unittest.TestCase):
         """SNS value of 140 kg N/ha should convert to SNS Index 4."""
         self.assertEqual(sns_value_to_index(140), 4)
 
-    @unittest.skip("Soil-type-specific nitrogen recommendations not implemented")
     def test_example_4_3_soil_specific_nitrogen(self):
-        """Winter wheat at SNS 4 on medium soil -> 120 kg N/ha.
-        The code's recommend_nitrogen() does not accept a soil_type parameter.
-        """
+        """Winter wheat at SNS 4 on medium soil -> 120 kg N/ha (Table 4.17)."""
+        self.assertEqual(
+            recommend_nitrogen("winter-wheat-feed", 4, soil_type="medium"), 120
+        )
 
     # ── Example 4.4 ─────────────────────────────────────────────────
     # Winter barley after 3-year pure grass ley.

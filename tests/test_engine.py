@@ -49,6 +49,36 @@ class TestNitrogen(unittest.TestCase):
         with self.assertRaises(ValueError):
             recommend_nitrogen("winter-wheat-feed", -1)
 
+    def test_soil_specific_medium(self):
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 4, soil_type="medium"), 120)
+
+    def test_soil_specific_light(self):
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 4, soil_type="light"), 60)
+
+    def test_soil_specific_heavy(self):
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 4, soil_type="heavy"), 120)
+
+    def test_soil_specific_organic(self):
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 4, soil_type="organic"), 80)
+
+    def test_without_soil_type_uses_generic(self):
+        # Existing behavior unchanged when soil_type is omitted
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 0), 220)
+
+    def test_invalid_soil_type_raises(self):
+        with self.assertRaises(ValueError):
+            recommend_nitrogen("winter-wheat-feed", 2, soil_type="volcanic")
+
+    def test_soil_specific_no_data_raises(self):
+        # Organic soil at SNS 0 has no data (dash in Table 4.17)
+        with self.assertRaises(ValueError):
+            recommend_nitrogen("winter-wheat-feed", 0, soil_type="organic")
+
+    def test_soil_specific_crop_without_table_raises(self):
+        # Spring barley has no soil-specific table
+        with self.assertRaises(ValueError):
+            recommend_nitrogen("spring-barley", 2, soil_type="medium")
+
 
 class TestPhosphorus(unittest.TestCase):
     def test_cereals_p0(self):

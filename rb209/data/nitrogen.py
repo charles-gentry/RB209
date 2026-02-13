@@ -205,3 +205,43 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("grass-grazed-one-cut", 5): 80,
     ("grass-grazed-one-cut", 6): 20,
 }
+
+# Soil-type-specific nitrogen recommendations.
+# (crop_value, sns_index, soil_type) -> kg N/ha
+# Where a crop has soil-specific data, this table takes precedence
+# over the generic NITROGEN_RECOMMENDATIONS when soil_type is given.
+
+NITROGEN_SOIL_SPECIFIC: dict[tuple[str, int, str], float] = {
+    # Table 4.17: Winter wheat (feed) — light sand soils
+    ("winter-wheat-feed", 0, "light"): 180,
+    ("winter-wheat-feed", 1, "light"): 150,
+    ("winter-wheat-feed", 2, "light"): 120,
+    ("winter-wheat-feed", 3, "light"): 90,
+    ("winter-wheat-feed", 4, "light"): 60,
+    ("winter-wheat-feed", 5, "light"): 30,
+    ("winter-wheat-feed", 6, "light"): 20,
+
+    # Table 4.17: Winter wheat (feed) — medium soils
+    ("winter-wheat-feed", 0, "medium"): 250,
+    ("winter-wheat-feed", 1, "medium"): 220,
+    ("winter-wheat-feed", 2, "medium"): 190,
+    ("winter-wheat-feed", 3, "medium"): 160,
+    ("winter-wheat-feed", 4, "medium"): 120,
+    ("winter-wheat-feed", 5, "medium"): 60,
+    ("winter-wheat-feed", 6, "medium"): 20,
+
+    # Table 4.17: Winter wheat (feed) — deep clayey soils
+    ("winter-wheat-feed", 0, "heavy"): 250,
+    ("winter-wheat-feed", 1, "heavy"): 220,
+    ("winter-wheat-feed", 2, "heavy"): 190,
+    ("winter-wheat-feed", 3, "heavy"): 160,
+    ("winter-wheat-feed", 4, "heavy"): 120,
+    ("winter-wheat-feed", 5, "heavy"): 60,
+    ("winter-wheat-feed", 6, "heavy"): 20,
+
+    # Table 4.17: Winter wheat (feed) — organic soils (SNS 0-2 not applicable)
+    ("winter-wheat-feed", 3, "organic"): 120,
+    ("winter-wheat-feed", 4, "organic"): 80,
+    ("winter-wheat-feed", 5, "organic"): 60,
+    ("winter-wheat-feed", 6, "organic"): 20,
+}

@@ -50,6 +50,7 @@ def _add_format_arg(parser: argparse.ArgumentParser) -> None:
 # ── Subcommand handlers ────────────────────────────────────────────
 
 def _handle_recommend(args: argparse.Namespace) -> None:
+    soil = getattr(args, "soil_type", None)
     rec = recommend_all(
         crop=args.crop,
         sns_index=args.sns_index,
@@ -57,12 +58,14 @@ def _handle_recommend(args: argparse.Namespace) -> None:
         k_index=args.k_index,
         mg_index=args.mg_index,
         straw_removed=args.straw_removed,
+        soil_type=soil,
     )
     print(format_recommendation(rec, args.output_format))
 
 
 def _handle_nitrogen(args: argparse.Namespace) -> None:
-    value = recommend_nitrogen(args.crop, args.sns_index)
+    soil = getattr(args, "soil_type", None)
+    value = recommend_nitrogen(args.crop, args.sns_index, soil_type=soil)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Nitrogen (N)", "kg/ha", value, args.output_format))
 
@@ -161,6 +164,9 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Straw removed from field (cereals, default: true)")
     p_rec.add_argument("--straw-incorporated", action="store_true",
                         help="Straw incorporated into field (cereals)")
+    p_rec.add_argument("--soil-type",
+                        choices=[s.value for s in SoilType],
+                        help="Soil type for soil-specific N recommendations")
     _add_format_arg(p_rec)
     p_rec.set_defaults(func=_handle_recommend)
 
@@ -170,6 +176,9 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Crop type")
     p_n.add_argument("--sns-index", required=True, type=int,
                       metavar="0-6", help="Soil Nitrogen Supply index (0-6)")
+    p_n.add_argument("--soil-type",
+                      choices=[s.value for s in SoilType],
+                      help="Soil type for soil-specific recommendation")
     _add_format_arg(p_n)
     p_n.set_defaults(func=_handle_nitrogen)
 
