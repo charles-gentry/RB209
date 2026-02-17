@@ -2,7 +2,7 @@
 
 Items identified from running the test suite (`python -m pytest tests/ -v`).
 
-**Summary:** 0 failed, 111 passed, 7 skipped (118 total).
+**Summary:** 0 failed, 114 passed, 4 skipped (118 total).
 
 ---
 
@@ -31,15 +31,21 @@ Test `test_example_4_2_pig_slurry_adjusted_available_n` has been implemented and
 now passes: spring + incorporated-6h gives 64.8 kg N/ha (60 % of total N) vs.
 37.8 kg N/ha for winter surface-applied (35 % of total N).
 
-### 3. Table 4.6 — Grass ley SNS by age, N-intensity and management regime
+~~### 3. Table 4.6 — Grass ley SNS by age, N-intensity and management regime~~
 
-**Tests:** `test_example_4_4_table_4_6_grass_ley_sns`, `test_example_4_5_table_4_6_grass_ley_sns`
+**Fixed.**  A new `calculate_grass_ley_sns()` engine function looks up SNS indices
+from RB209 Table 4.6 (SNS Indices following ploughing out of grass leys).  It accepts
+`ley_age` (`"1-2yr"` / `"3-5yr"`), `n_intensity` (`"low"` / `"high"`), `management`
+(`"cut"` / `"grazed"` / `"1-cut-then-grazed"`), `soil_type`, `rainfall`, and `year`
+(1–3 years after ploughing).  The full Table 4.6 dataset — four soil categories × three
+management rows × three years — is stored in `GRASS_LEY_SNS_LOOKUP` in
+`rb209/data/sns.py`.  The function returns an `SNSResult` with `method="table-4.6"`.
 
-`calculate_sns` has no lookup for grass ley previous crops using Table 4.6, which
-maps combinations of (ley age × annual N-input × management regime) to an SNS index.
-Examples:
-- 3–5 year ley, high N (280 kg/ha/yr), 1 cut silage then grazed → SNS 2 (Example 4.4)
-- 2-year grazed ley, high N (300 kg/ha/yr) → SNS 2 (Example 4.5)
+Tests now passing:
+- `test_example_4_4_table_4_6_grass_ley_sns`: 3–5yr ley, high N, 1-cut-then-grazed,
+  medium soil, moderate rainfall → Year 1 = SNS 2 (Example 4.4)
+- `test_example_4_5_table_4_6_grass_ley_sns`: 1–2yr ley, high N, grazed, heavy soil,
+  high rainfall → Year 2 = SNS 2 (Example 4.5 — winter wheat is 2nd crop after the ley)
 
 ### 4. Intermediate grass ley duration category (3-year ley)
 

@@ -861,7 +861,20 @@ Unlike P, K, and Mg, nitrogen availability is not measured by a single soil test
 2. **Soil type** -- affects how nitrogen is retained or leached
 3. **Rainfall** -- excess winter rainfall leaches nitrogen from the soil
 
-A higher SNS index means more nitrogen is already available in the soil, so less fertiliser nitrogen is needed. The `sns` command performs this lookup.
+A higher SNS index means more nitrogen is already available in the soil, so less fertiliser nitrogen is needed. The `sns` command performs this lookup using Tables 4.3–4.5.
+
+**Grass ley history (Table 4.6):** When a field has been in grass within the past three years, RB209 requires also consulting Table 4.6 and using the **higher** of the two SNS indices. The Python API exposes `calculate_grass_ley_sns(ley_age, n_intensity, management, soil_type, rainfall, year=1)` for this purpose — it returns an `SNSResult` with `method="table-4.6"`. Parameters:
+
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `ley_age` | `"1-2yr"`, `"3-5yr"` | Duration of the grass ley |
+| `n_intensity` | `"low"`, `"high"` | Annual N inputs: low = <250 kg N/ha; high = >250 kg N/ha, clover-rich, or lucerne |
+| `management` | `"cut"`, `"grazed"`, `"1-cut-then-grazed"` | Ley management regime |
+| `soil_type` | `"light"`, `"medium"`, `"heavy"` | Soil type (organic soils not covered by Table 4.6) |
+| `rainfall` | `"low"`, `"medium"`, `"high"` | Rainfall category |
+| `year` | `1`, `2`, `3` | Year after ploughing out the ley (default 1) |
+
+This function is not yet exposed as a CLI subcommand. Use it directly from Python and compare the result with the `sns` command output, taking the higher index.
 
 ### Straw Management
 
