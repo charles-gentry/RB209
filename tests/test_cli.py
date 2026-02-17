@@ -1,9 +1,12 @@
 """Integration tests for the CLI."""
 
 import json
+import pathlib
 import subprocess
 import sys
 import unittest
+
+_REPO_ROOT = pathlib.Path(__file__).parents[1]
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
@@ -11,7 +14,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
         [sys.executable, "-m", "rb209", *args],
         capture_output=True,
         text=True,
-        cwd="/home/user/Rb209",
+        cwd=_REPO_ROOT,
     )
 
 
