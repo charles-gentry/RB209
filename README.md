@@ -4,7 +4,7 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 
 - 22 crop types across arable, grassland, and potato categories
 - Nitrogen, phosphorus, potassium, magnesium, sulfur, and lime recommendations
-- Organic material nutrient calculations (manures, composts, slurries)
+- Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for pig slurry (RB209 Table 2.12)
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies
 
