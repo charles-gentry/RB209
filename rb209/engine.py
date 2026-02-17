@@ -17,7 +17,11 @@ from rb209.data.crops import CROP_INFO
 from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION
 from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS
 from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC
-from rb209.data.organic import ORGANIC_MATERIAL_INFO
+from rb209.data.organic import (
+    ORGANIC_MATERIAL_INFO,
+    ORGANIC_N_TIMING_FACTORS,
+    TIMING_SOIL_CATEGORY,
+)
 from rb209.data.phosphorus import PHOSPHORUS_RECOMMENDATIONS
 from rb209.data.potassium import (
     POTASSIUM_RECOMMENDATIONS,
@@ -329,12 +333,30 @@ def recommend_all(
 
 # ── Organic materials ──────────────────────────────────────────────
 
-def calculate_organic(material: str, rate: float) -> OrganicNutrients:
+def calculate_organic(
+    material: str,
+    rate: float,
+    timing: str | None = None,
+    incorporated: bool = False,
+    soil_type: str | None = None,
+) -> OrganicNutrients:
     """Calculate nutrients supplied by an organic material application.
 
     Args:
         material: Organic material value string.
         rate: Application rate in t/ha (FYM/compost) or m3/ha (slurry).
+        timing: Optional application timing season for N adjustment.
+            One of "autumn" (Aug–Oct), "winter" (Nov–Jan),
+            "spring" (Feb–Apr), or "summer" (grassland).
+            When provided, available_n is derived from the RB209 timing
+            and incorporation factor tables (Section 2) instead of the
+            flat default coefficient.
+        incorporated: Whether the material is soil-incorporated promptly
+            after application (within 6 h for liquids, 24 h for solids).
+            Only meaningful when *timing* is also supplied.
+        soil_type: Soil type string ("light", "medium", "heavy", "organic").
+            Used with *timing* to select the correct soil category in the
+            factor tables.  Defaults to "medium_heavy" when omitted.
     """
     try:
         OrganicMaterial(material)
@@ -348,11 +370,33 @@ def calculate_organic(material: str, rate: float) -> OrganicNutrients:
         raise ValueError("Application rate must be non-negative")
 
     info = ORGANIC_MATERIAL_INFO[material]
+    total_n = round(info["total_n"] * rate, 1)
+
+    if timing is not None:
+        timing_table = ORGANIC_N_TIMING_FACTORS.get(material)
+        if timing_table is None:
+            raise ValueError(
+                f"No timing/incorporation factors available for '{material}'. "
+                "Use the flat available_n coefficient instead."
+            )
+        soil_cat = TIMING_SOIL_CATEGORY.get(soil_type or "", "medium_heavy")
+        key = (timing, soil_cat, incorporated)
+        if key not in timing_table:
+            raise ValueError(
+                f"No timing factor for material='{material}', timing='{timing}', "
+                f"soil_category='{soil_cat}', incorporated={incorporated}. "
+                "Check that the combination is defined in RB209 Table 2.12."
+            )
+        n_factor = timing_table[key]
+        available_n = round(n_factor * info["total_n"] * rate, 1)
+    else:
+        available_n = round(info["available_n"] * rate, 1)
+
     return OrganicNutrients(
         material=info["name"],
         rate=rate,
-        total_n=round(info["total_n"] * rate, 1),
-        available_n=round(info["available_n"] * rate, 1),
+        total_n=total_n,
+        available_n=available_n,
         p2o5=round(info["p2o5"] * rate, 1),
         k2o=round(info["k2o"] * rate, 1),
         mgo=round(info["mgo"] * rate, 1),

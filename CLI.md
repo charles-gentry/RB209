@@ -434,7 +434,7 @@ Calculate nutrients supplied by an organic material application.
 **Usage:**
 
 ```
-rb209 organic --material MATERIAL --rate RATE [--format FORMAT]
+rb209 organic --material MATERIAL --rate RATE [--timing SEASON] [--incorporated] [--soil-type TYPE] [--format FORMAT]
 ```
 
 **Arguments:**
@@ -443,9 +443,12 @@ rb209 organic --material MATERIAL --rate RATE [--format FORMAT]
 |----------|----------|------|--------------|---------|-------------|
 | `--material` | Yes | string | `cattle-fym`, `pig-fym`, `sheep-fym`, `horse-fym`, `poultry-litter`, `layer-manure`, `cattle-slurry`, `pig-slurry`, `green-compost`, `green-food-compost`, `biosolids-cake`, `paper-crumble` | -- | Organic material type |
 | `--rate` | Yes | float | >= 0 | -- | Application rate (t/ha for solids, m3/ha for slurries) |
+| `--timing` | No | string | `autumn`, `winter`, `spring`, `summer` | -- | Application season for timing-adjusted available-N (see note below) |
+| `--incorporated` | No | flag | -- | false | Material is soil-incorporated promptly after application (within 6 h for slurries) |
+| `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | medium-heavy | Soil type for timing-adjusted lookup |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
-**Example (table):**
+**Example (flat default — no timing):**
 
 ```
 $ rb209 organic --material cattle-fym --rate 25
@@ -460,6 +463,24 @@ $ rb209 organic --material cattle-fym --rate 25
 |   MgO                   45.0 kg/ha |
 |   SO3                   75.0 kg/ha |
 +----------------------------------+
+```
+
+**Example (timing-adjusted — pig slurry, spring, incorporated within 6 h):**
+
+```
+$ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
++------------------------------------+
+| Organic Nutrients — Pig Slurry (4% |
+|  DM)                               |
++------------------------------------+
+|   Application rate              30.0 |
+|   Total N               108.0 kg/ha |
+|   Available N (yr 1)     64.8 kg/ha |
+|   P2O5                   60.0 kg/ha |
+|   K2O                    48.0 kg/ha |
+|   MgO                    15.0 kg/ha |
+|   SO3                    24.0 kg/ha |
++------------------------------------+
 ```
 
 **Example (JSON):**
@@ -491,9 +512,10 @@ $ rb209 organic --material cattle-fym --rate 25
 | `so3` | float | Sulfur as SO3 (kg/ha) |
 
 **Notes:**
-- `total_n` is the total nitrogen in the application. `available_n` is the portion available to the crop in year 1 (typically 10-30% of total N for farmyard manures).
+- `total_n` is the total nitrogen in the application. `available_n` is the portion available to the crop in year 1 (typically 10–30 % of total N for farmyard manures, higher for slurries).
 - Solid materials (FYM, compost, cake, litter) use t/ha. Slurries use m3/ha. See [Organic Materials](#organic-materials) for units per material.
-- Nutrient values are calculated as `per_unit_content * rate`, rounded to 1 decimal place.
+- Nutrient values are calculated as `per_unit_content × rate`, rounded to 1 decimal place.
+- **Timing-adjusted available-N** is currently supported for `pig-slurry` only, using RB209 Table 2.12 percentage factors. When `--timing` is omitted, the flat default coefficient is used (60 % of total N for pig slurry, reflecting a spring application). Timing seasons: `autumn` = Aug–Oct, `winter` = Nov–Jan, `spring` = Feb–Apr, `summer` = grassland use only. Incorporating slurry promptly (`--incorporated`) increases the retained nitrogen; for pig slurry in spring this raises available N from 50 % to 60 % of total N. The `--soil-type` argument selects the correct column in Table 2.12 — `light` maps to the sandy/shallow category; all other soil types map to medium/heavy.
 
 ---
 
@@ -804,7 +826,7 @@ Used by the `organic` command via `--material`. Per-unit nutrient content (kg pe
 | `poultry-litter` | Poultry Litter (broiler/turkey) | t | 19.0 | 5.7 | 14.0 | 9.5 | 3.5 | 5.0 |
 | `layer-manure` | Layer Manure | t | 16.0 | 4.8 | 13.0 | 8.0 | 3.0 | 5.5 |
 | `cattle-slurry` | Cattle Slurry (6% DM) | m3 | 2.6 | 0.8 | 1.2 | 2.5 | 0.5 | 0.8 |
-| `pig-slurry` | Pig Slurry (4% DM) | m3 | 3.6 | 1.4 | 2.0 | 1.6 | 0.5 | 0.8 |
+| `pig-slurry` | Pig Slurry (4% DM) | m3 | 3.6 | 2.167 | 2.0 | 1.6 | 0.5 | 0.8 |
 | `green-compost` | Green Compost | t | 4.3 | 0.4 | 3.0 | 4.2 | 1.5 | 2.5 |
 | `green-food-compost` | Green/Food Compost | t | 8.0 | 0.8 | 4.5 | 6.0 | 2.0 | 4.0 |
 | `biosolids-cake` | Biosolids Cake (sewage sludge) | t | 12.5 | 2.5 | 12.0 | 0.5 | 2.0 | 7.0 |
@@ -868,7 +890,9 @@ The maximum single application is 7.5 t/ha. If the calculated requirement exceed
 
 ### Organic Material Nutrients
 
-Organic materials (manures, slurries, composts) supply multiple nutrients. The `organic` command reports both **total nitrogen** and **available nitrogen** (crop-available in year 1). Available N is much lower than total N because most organic nitrogen must mineralise before crops can use it (typically 10-30% availability in year 1 for farmyard manures, higher for poultry manures and slurries).
+Organic materials (manures, slurries, composts) supply multiple nutrients. The `organic` command reports both **total nitrogen** and **available nitrogen** (crop-available in year 1). Available N is typically 10–30 % of total N for farmyard manures, and higher (35–60 %) for slurries and poultry manures.
+
+By default, `available_n` is calculated from the flat per-unit coefficient in the RB209 typical-values tables. For **pig slurry**, the more accurate approach from RB209 Section 2 (Table 2.12) is available via the `--timing`, `--incorporated`, and `--soil-type` flags: the available-N fraction ranges from 10 % (autumn, sandy soil, surface-applied) to 60 % (spring, any soil, incorporated within 6 hours). See the [`organic` command](#organic) for details.
 
 ### Nutrient Units
 

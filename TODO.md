@@ -20,13 +20,16 @@ test file's location and is machine/casing agnostic.
 
 ## Unimplemented Features (Skipped Tests)
 
-### 2. Timing and incorporation adjustment factors for organic materials
+~~### 2. Timing and incorporation adjustment factors for organic materials~~
 
-**Test:** `test_example_4_2_pig_slurry_adjusted_available_n`
-
-Pig slurry applied in February and incorporated within 6 hours should yield a higher
-available-N figure than the flat coefficient currently used.  RB209 Section 2 defines
-timing- and incorporation-specific adjustment factors that are not yet implemented.
+**Fixed.**  `calculate_organic()` now accepts optional `timing`, `incorporated`,
+and `soil_type` parameters.  When `timing` is supplied, available-N is derived from
+the RB209 Table 2.12 percentage factors instead of the flat default coefficient.
+A lookup table (`ORGANIC_N_TIMING_FACTORS`) keyed on material, timing season,
+soil category, and incorporation flag is stored in `rb209/data/organic.py`.
+Test `test_example_4_2_pig_slurry_adjusted_available_n` has been implemented and
+now passes: spring + incorporated-6h gives 64.8 kg N/ha (60 % of total N) vs.
+37.8 kg N/ha for winter surface-applied (35 % of total N).
 
 ### 3. Table 4.6 — Grass ley SNS by age, N-intensity and management regime
 

@@ -99,7 +99,13 @@ def _handle_sns_smn(args: argparse.Namespace) -> None:
 
 
 def _handle_organic(args: argparse.Namespace) -> None:
-    result = calculate_organic(args.material, args.rate)
+    result = calculate_organic(
+        args.material,
+        args.rate,
+        timing=args.timing,
+        incorporated=args.incorporated,
+        soil_type=getattr(args, "soil_type", None),
+    )
     print(format_organic(result, args.output_format))
 
 
@@ -247,6 +253,31 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Organic material type")
     p_org.add_argument("--rate", required=True, type=float,
                         help="Application rate (t/ha or m3/ha)")
+    p_org.add_argument("--timing",
+                        choices=["autumn", "winter", "spring", "summer"],
+                        default=None,
+                        help=(
+                            "Application season for timing-adjusted available-N "
+                            "(autumn=Aug–Oct, winter=Nov–Jan, spring=Feb–Apr, "
+                            "summer=grassland only). "
+                            "Only supported for pig-slurry (RB209 Table 2.12). "
+                            "When omitted, the flat default coefficient is used."
+                        ))
+    p_org.add_argument("--incorporated", action="store_true", default=False,
+                        help=(
+                            "Material is soil-incorporated promptly after "
+                            "application (within 6 h for slurries, 24 h for "
+                            "solids). Only meaningful when --timing is also given."
+                        ))
+    p_org.add_argument("--soil-type",
+                        choices=[s.value for s in SoilType],
+                        default=None,
+                        help=(
+                            "Soil type for timing-adjusted available-N lookup "
+                            "(light=sandy/shallow, medium/heavy/organic=medium-heavy). "
+                            "Defaults to medium-heavy when --timing is given without "
+                            "--soil-type."
+                        ))
     _add_format_arg(p_org)
     p_org.set_defaults(func=_handle_organic)
 

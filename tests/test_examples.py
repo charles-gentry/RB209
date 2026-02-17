@@ -98,14 +98,29 @@ class TestRB209Examples(unittest.TestCase):
         net = n_rec - organic.available_n
         self.assertAlmostEqual(net, 55.0)
 
-    @unittest.skip(
-        "Timing/incorporation adjustment factors for organic materials not implemented"
-    )
     def test_example_4_2_pig_slurry_adjusted_available_n(self):
         """Pig slurry applied Feb, incorporated < 6 h should yield higher
-        available N than the flat coefficient.  Requires timing and
-        incorporation adjustment factors (RB209 Section 2).
+        available N than a winter surface application.
+        Table 2.12 (RB209 Section 2): spring + incorporated-6h = 60% of
+        total N; winter + surface-applied = 35% of total N.
         """
+        # Spring application incorporated within 6 hours (Table 2.12, 4% DM):
+        # 60% × 3.6 kg N/m³ × 30 m³/ha = 64.8 kg N/ha
+        spring_inc = calculate_organic(
+            "pig-slurry", 30, timing="spring", incorporated=True
+        )
+        self.assertAlmostEqual(spring_inc.available_n, 64.8, places=1)
+
+        # Winter surface-applied, medium soil (Table 2.12, 4% DM):
+        # 35% × 3.6 kg N/m³ × 30 m³/ha = 37.8 kg N/ha
+        winter_surf = calculate_organic(
+            "pig-slurry", 30, timing="winter", soil_type="medium", incorporated=False
+        )
+        self.assertAlmostEqual(winter_surf.available_n, 37.8, places=1)
+
+        # Incorporating promptly in spring delivers more available N than
+        # leaving material on the surface over winter.
+        self.assertGreater(spring_inc.available_n, winter_surf.available_n)
 
     # ── Example 4.3 ─────────────────────────────────────────────────
     # Winter wheat on medium soil after potatoes (received FYM).
