@@ -2,26 +2,19 @@
 
 Items identified from running the test suite (`python -m pytest tests/ -v`).
 
-**Summary:** 16 failed, 95 passed, 7 skipped (118 total).
+**Summary:** 0 failed, 111 passed, 7 skipped (118 total).
 
 ---
 
 ## Bugs / Failures
 
-### 1. Fix wrong `cwd` path in CLI integration tests (16 tests failing)
+~~### 1. Fix wrong `cwd` path in CLI integration tests (16 tests failing)~~
 
-**File:** `tests/test_cli.py:14`
-
-All 16 CLI integration tests fail with:
-
-```
-FileNotFoundError: [Errno 2] No such file or directory: '/home/user/Rb209'
-```
-
-The `_run_cli` helper hard-codes `cwd="/home/user/Rb209"` but the actual directory
-is `/home/user/RB209` (all-caps). Fix by using a path relative to the test file
-(e.g. `pathlib.Path(__file__).parents[1]`) so the tests are not tied to a specific
-machine or casing.
+**Fixed** in `tests/test_cli.py`. The `_run_cli` helper hard-coded
+`cwd="/home/user/Rb209"` (wrong casing), causing all 16 CLI integration tests to
+fail with `FileNotFoundError`. Replaced with
+`_REPO_ROOT = pathlib.Path(__file__).parents[1]` so the path is derived from the
+test file's location and is machine/casing agnostic.
 
 ---
 
