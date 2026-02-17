@@ -1,8 +1,8 @@
 # TODO
 
-Items identified from running the test suite (`python -m pytest tests/ -v`).
+Items identified from the test suite and a full code review.
 
-**Summary:** 0 failed, 114 passed, 4 skipped (118 total).
+**Test summary:** 0 failed, 114 passed, 4 skipped (118 total).
 
 ---
 
@@ -79,3 +79,137 @@ step is not implemented.
 the crop that preceded the immediate previous crop (a 2-year ley before spring
 barley) to apply Table 4.6 correctly.  The function signature and SNS logic need
 extending to accept an optional crop-history chain.
+
+---
+
+## Code Review Findings
+
+Issues identified from a full code review (not covered by the test-suite items above).
+
+### 8. `recommend_nitrogen` raises instead of falling back to generic table when `soil_type` is provided
+
+**Files:** `rb209/engine.py:285-299`
+
+When `soil_type` is passed to `recommend_nitrogen()` for a crop that only has generic
+N data (anything other than `winter-wheat-feed`), the function raises `ValueError`
+instead of falling back to the generic recommendation table.  This also breaks the
+`recommend` CLI subcommand:
+
+```
+$ rb209 recommend --crop spring-barley --sns-index 1 --p-index 1 --k-index 1 --soil-type medium
+Error: No soil-specific nitrogen data for crop 'spring-barley' at SNS 1 on medium soil
+```
+
+The `--soil-type` flag is documented as optional, and the user may reasonably pass it
+for other purposes (e.g. to note their soil type for reporting).  When soil-specific N
+data is absent, the engine should fall back to `NITROGEN_RECOMMENDATIONS` rather than
+erroring.
+
+### 9. No CLI subcommand for `calculate_grass_ley_sns` (Table 4.6)
+
+**File:** `rb209/cli.py`
+
+The engine exposes `calculate_grass_ley_sns()` for Table 4.6 grass ley SNS lookups,
+but there is no corresponding CLI subcommand (e.g. `sns-ley`).  Users can only access
+this calculation via the Python API.  A `sns-ley` (or `sns --method ley`) subcommand
+accepting `--ley-age`, `--n-intensity`, `--management`, `--soil-type`, `--rainfall`,
+and `--year` would make the feature accessible from the command line.
+
+### 10. `format_sns` displays empty "Previous crop" row for Table 4.6 results
+
+**File:** `rb209/formatters.py:81-94`
+
+When the SNS method is `"table-4.6"`, the formatter falls into the `else` branch
+and displays `previous_crop`, `soil_type`, and `rainfall`.  But `previous_crop`
+is an empty string for Table 4.6 results, producing a blank row:
+
+```
+|   Previous crop              |
+```
+
+The formatter should either omit the previous-crop row when it is empty, or display
+ley-specific fields (ley age, management, year) for Table 4.6 results.
+
+### 11. Timing/incorporation factors only implemented for pig slurry
+
+**File:** `rb209/data/organic.py:46-48`
+
+`ORGANIC_N_TIMING_FACTORS` only contains data for `"pig-slurry"`.  RB209 Section 2
+(Table 2.12 and related tables) provides timing and incorporation factors for all
+major organic materials (cattle slurry, FYMs, poultry manure, etc.).  Passing
+`timing=` for any other material raises `ValueError`:
+
+```
+ValueError: No timing/incorporation factors available for 'cattle-slurry'.
+```
+
+The remaining materials should be added to match the RB209 reference.
+
+### 12. `Crop` and `CropCategory` enums are defined but never used
+
+**File:** `rb209/models.py:15-52`
+
+The `Crop` enum (22 members) and `CropCategory` enum are defined and `Crop` is
+imported in `cli.py`, but neither is referenced anywhere in the codebase.  The
+engine, CLI, and data modules all use plain string values for crop identification.
+These enums are dead code — either integrate them into the type signatures
+(replacing bare `str` crop parameters) or remove them.
+
+### 13. `TARGET_PH` and `MIN_PH_FOR_LIMING` constants are unused
+
+**File:** `rb209/data/lime.py:17-23`
+
+`TARGET_PH` (arable: 6.5, grassland: 6.0) and `MIN_PH_FOR_LIMING = 5.0` are
+defined but never imported or referenced anywhere.  `calculate_lime` takes
+`target_ph` as an explicit argument and performs no land-use-based defaulting
+or minimum-pH gating.  Either wire these constants into the engine (e.g.
+auto-suggest target pH by crop category, warn when pH is below the liming
+threshold) or remove them as dead code.
+
+### 14. `OrganicNutrients` dataclass lacks a unit field
+
+**File:** `rb209/models.py:130-139`, `rb209/formatters.py:104`
+
+`OrganicNutrients` stores `rate` but not the unit (tonnes/ha vs. m³/ha).
+The formatter outputs the application rate as a bare number:
+
+```
+|   Application rate          25.0 |
+```
+
+There is no way for the user to tell whether the rate is in t/ha or m³/ha.
+Adding a `unit` field (populated from `ORGANIC_MATERIAL_INFO[material]["unit"]`)
+would allow the formatter to display e.g. `25.0 t/ha` or `30.0 m³/ha`.
+
+### 15. `--straw-removed` / `--straw-incorporated` flags should be mutually exclusive
+
+**Files:** `rb209/cli.py:169-172, 206-209, 322-324`
+
+Both the `recommend` and `potassium` parsers define `--straw-removed`
+(`default=True, action="store_true"`) and `--straw-incorporated`
+(`action="store_true"`) as independent flags.  Passing both simultaneously is
+silently accepted, with `--straw-incorporated` winning via the override in
+`main()`.  Using `parser.add_mutually_exclusive_group()` would prevent
+confusing combinations and make the default behaviour explicit.
+
+### 16. `pyproject.toml` uses private setuptools build backend
+
+**File:** `pyproject.toml:13`
+
+```toml
+build-backend = "setuptools.backends._legacy:_Backend"
+```
+
+This references a private/internal setuptools module path.  The standard entry
+point is `"setuptools.build_meta"`.  The private path may break with future
+setuptools releases.
+
+### 17. `_validate_index` accepts `bool` values due to Python `bool` subclassing `int`
+
+**File:** `rb209/engine.py:42`
+
+`_validate_index` checks `not isinstance(value, int)`, but Python `bool` is a
+subclass of `int` (`isinstance(True, int)` is `True`).  This means
+`recommend_nitrogen("winter-wheat-feed", True)` silently succeeds and returns
+the SNS index 1 recommendation (180 kg/ha) rather than rejecting the input.
+Adding `isinstance(value, bool)` as an early rejection would prevent this.
