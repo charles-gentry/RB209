@@ -13,6 +13,7 @@ timing/incorporation adjustment factors, crop history) are marked with
 import unittest
 
 from rb209.engine import (
+    calculate_grass_ley_sns,
     calculate_organic,
     calculate_smn_sns,
     calculate_sns,
@@ -169,13 +170,20 @@ class TestRB209Examples(unittest.TestCase):
         """Winter barley at SNS 2 -> 130 kg N/ha."""
         self.assertEqual(recommend_nitrogen("winter-barley", 2), 130)
 
-    @unittest.skip(
-        "Table 4.6 (grass ley SNS by age/N-intensity/regime) not implemented"
-    )
     def test_example_4_4_table_4_6_grass_ley_sns(self):
         """3-year grass ley, high N (280 kg/ha/yr), 1 cut silage + grazed,
         medium soil, moderate rainfall -> SNS 2 per Table 4.6.
         """
+        result = calculate_grass_ley_sns(
+            ley_age="3-5yr",
+            n_intensity="high",
+            management="1-cut-then-grazed",
+            soil_type="medium",
+            rainfall="medium",
+            year=1,
+        )
+        self.assertEqual(result.sns_index, 2)
+        self.assertEqual(result.method, "table-4.6")
 
     @unittest.skip("3-year grass ley category not available as previous crop")
     def test_example_4_4_three_year_ley_category(self):
@@ -220,9 +228,21 @@ class TestRB209Examples(unittest.TestCase):
         """
         self.assertEqual(recommend_nitrogen("winter-wheat-feed", 1), 180)
 
-    @unittest.skip("Table 4.6 (grass ley SNS) not implemented")
     def test_example_4_5_table_4_6_grass_ley_sns(self):
-        """2-year grazed ley, high N (300 kg/ha/yr) -> SNS 2 per Table 4.6."""
+        """2-year grazed ley, high N (300 kg/ha/yr), heavy soil, high rainfall.
+        Winter wheat is the second crop after the ley (spring barley was Year 1).
+        Table 4.6 Year 2 SNS -> 2.
+        """
+        result = calculate_grass_ley_sns(
+            ley_age="1-2yr",
+            n_intensity="high",
+            management="grazed",
+            soil_type="heavy",
+            rainfall="high",
+            year=2,
+        )
+        self.assertEqual(result.sns_index, 2)
+        self.assertEqual(result.method, "table-4.6")
 
     @unittest.skip(
         "'Take higher of two SNS values' logic not implemented"

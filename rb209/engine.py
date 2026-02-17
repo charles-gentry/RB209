@@ -28,7 +28,7 @@ from rb209.data.potassium import (
     POTASSIUM_STRAW_INCORPORATED,
     POTASSIUM_STRAW_REMOVED,
 )
-from rb209.data.sns import SNS_LOOKUP, SNS_VALUE_TO_INDEX
+from rb209.data.sns import GRASS_LEY_SNS_LOOKUP, SNS_LOOKUP, SNS_VALUE_TO_INDEX
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 
 
@@ -157,6 +157,110 @@ def calculate_smn_sns(smn: float, crop_n: float) -> SNSResult:
         smn=smn,
         crop_n=crop_n,
         sns_value=total_sns,
+        notes=notes,
+    )
+
+
+def calculate_grass_ley_sns(
+    ley_age: str,
+    n_intensity: str,
+    management: str,
+    soil_type: str,
+    rainfall: str,
+    year: int = 1,
+) -> SNSResult:
+    """Calculate Soil Nitrogen Supply index from Table 4.6 (grass ley history).
+
+    Use this when the field has been in grass within the past three years.
+    The result should be compared with the Table 4.3/4.4/4.5 field-assessment
+    result and the higher of the two SNS indices used.
+
+    Args:
+        ley_age: Duration of the grass ley: "1-2yr" or "3-5yr".
+        n_intensity: N management of the ley: "low" (average annual inputs
+            <250 kg N/ha) or "high" (>250 kg N/ha, clover-rich, or lucerne).
+        management: Ley management regime: "cut" (2+ cuts annually, little/no
+            manure), "grazed", or "1-cut-then-grazed".
+        soil_type: Soil type: "light", "medium", or "heavy".
+            Note: organic soils are not covered by Table 4.6.
+        rainfall: Rainfall category: "low", "medium", or "high".
+        year: Year after ploughing out the ley (1, 2, or 3). Defaults to 1.
+
+    Returns:
+        SNSResult with sns_index from Table 4.6 and method="table-4.6".
+    """
+    valid_ages = ("1-2yr", "3-5yr")
+    if ley_age not in valid_ages:
+        raise ValueError(f"ley_age must be one of {valid_ages}, got '{ley_age}'")
+
+    valid_intensities = ("low", "high")
+    if n_intensity not in valid_intensities:
+        raise ValueError(
+            f"n_intensity must be one of {valid_intensities}, got '{n_intensity}'"
+        )
+
+    valid_managements = ("cut", "grazed", "1-cut-then-grazed")
+    if management not in valid_managements:
+        raise ValueError(
+            f"management must be one of {valid_managements}, got '{management}'"
+        )
+
+    try:
+        SoilType(soil_type)
+    except ValueError:
+        valid = ", ".join(s.value for s in SoilType)
+        raise ValueError(f"Unknown soil type '{soil_type}'. Valid options: {valid}")
+
+    if soil_type == "organic":
+        raise ValueError(
+            "Table 4.6 does not cover organic soils. "
+            "Use the SMN measurement method for these soils."
+        )
+
+    try:
+        Rainfall(rainfall)
+    except ValueError:
+        valid = ", ".join(r.value for r in Rainfall)
+        raise ValueError(
+            f"Unknown rainfall category '{rainfall}'. Valid options: {valid}"
+        )
+
+    if year not in (1, 2, 3):
+        raise ValueError(f"year must be 1, 2, or 3, got {year}")
+
+    # Map soil_type + rainfall to Table 4.6 soil category
+    if soil_type == "light":
+        soil_cat = "light"
+    elif soil_type == "medium":
+        soil_cat = "medium"
+    else:  # heavy
+        soil_cat = "heavy-low" if rainfall == "low" else "heavy-medium-high"
+
+    # Determine Table 4.6 ley management row
+    if ley_age == "3-5yr" and n_intensity == "high" and management == "grazed":
+        ley_row = "high-n-grazed-35yr"
+    elif (
+        (n_intensity == "high" and management == "grazed")
+        or (ley_age == "3-5yr" and n_intensity == "low" and management == "grazed")
+        or (ley_age == "3-5yr" and n_intensity == "high" and management == "1-cut-then-grazed")
+    ):
+        ley_row = "high-n-grazed-or-mixed"
+    else:
+        ley_row = "low-n-or-cut"
+
+    year1, year2, year3 = GRASS_LEY_SNS_LOOKUP[(soil_cat, ley_row)]
+    sns_index = (year1, year2, year3)[year - 1]
+
+    notes = [
+        f"Table 4.6: {ley_age} ley, {n_intensity} N, {management} management, "
+        f"{soil_type} soil, {rainfall} rainfall — year {year} after ploughing.",
+    ]
+
+    return SNSResult(
+        sns_index=sns_index,
+        soil_type=soil_type,
+        rainfall=rainfall,
+        method="table-4.6",
         notes=notes,
     )
 

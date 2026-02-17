@@ -68,6 +68,45 @@ SNS_LOOKUP: dict[tuple[str, str, str], int] = {
     ("very-high", "organic", "high"): 4,
 }
 
+# Table 4.6: SNS Indices following ploughing out of grass leys.
+#
+# Key: (soil_category, ley_row)
+# soil_category:
+#   "light"             – Light sands or shallow soils over sandstone (all rainfall)
+#   "medium"            – Other medium soils and shallow soils, not over sandstone (all rainfall)
+#   "heavy-low"         – Deep clayey/silty soils, low rainfall (500–600 mm annual)
+#   "heavy-medium-high" – Deep clayey/silty soils, moderate or high rainfall
+# ley_row:
+#   "low-n-or-cut"          – All leys ≥2 cuts/yr with little/no manure; 1–2yr low N;
+#                             1–2yr ≥1 cut; 3–5yr low N ≥1 cut
+#   "high-n-grazed-or-mixed" – 1–2yr high N grazed; 3–5yr low N grazed;
+#                              3–5yr high N 1 cut then grazed
+#   "high-n-grazed-35yr"    – 3–5yr high N grazed (highest residues)
+#
+# Value: (year1_sns, year2_sns, year3_sns)
+
+GRASS_LEY_SNS_LOOKUP: dict[tuple[str, str], tuple[int, int, int]] = {
+    # Light sands or shallow soils over sandstone – all rainfall areas
+    ("light", "low-n-or-cut"):           (0, 0, 0),
+    ("light", "high-n-grazed-or-mixed"): (1, 2, 1),
+    ("light", "high-n-grazed-35yr"):     (3, 2, 1),
+
+    # Other medium soils and shallow soils – not over sandstone – all rainfall areas
+    ("medium", "low-n-or-cut"):           (1, 1, 1),
+    ("medium", "high-n-grazed-or-mixed"): (2, 2, 1),
+    ("medium", "high-n-grazed-35yr"):     (3, 3, 2),
+
+    # Deep clayey soils and deep silty soils in low rainfall areas (500–600 mm)
+    ("heavy-low", "low-n-or-cut"):           (2, 2, 2),
+    ("heavy-low", "high-n-grazed-or-mixed"): (3, 3, 2),
+    ("heavy-low", "high-n-grazed-35yr"):     (5, 4, 3),
+
+    # Deep clayey soils and deep silty soils in moderate or high rainfall areas
+    ("heavy-medium-high", "low-n-or-cut"):           (1, 1, 1),
+    ("heavy-medium-high", "high-n-grazed-or-mixed"): (3, 2, 1),
+    ("heavy-medium-high", "high-n-grazed-35yr"):     (4, 3, 2),
+}
+
 # Table 4.10: SNS value (kg N/ha) to SNS index.
 # Each tuple is (upper_bound_inclusive, sns_index).
 # Evaluated in order; first match wins.

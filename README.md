@@ -4,6 +4,8 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 
 - 22 crop types across arable, grassland, and potato categories
 - Nitrogen, phosphorus, potassium, magnesium, sulfur, and lime recommendations
+- Soil Nitrogen Supply (SNS) index via field assessment (Tables 4.3–4.5) or direct SMN measurement
+- Grass ley SNS calculation from RB209 Table 4.6 — looks up SNS indices by ley age (1–2yr / 3–5yr), N-intensity, and management regime (cut / grazed / 1-cut-then-grazed) for up to three years after ploughing out
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for pig slurry (RB209 Table 2.12)
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies
@@ -88,7 +90,8 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `phosphorus` | Phosphorus recommendation only |
 | `potassium` | Potassium recommendation only (with straw management options) |
 | `sulfur` | Sulfur recommendation only |
-| `sns` | Calculate Soil Nitrogen Supply index from field assessment |
+| `sns` | Calculate SNS index from field assessment (Tables 4.3–4.5) |
+| `sns-smn` | Calculate SNS index from direct soil mineral N measurement |
 | `organic` | Calculate nutrients from organic material applications |
 | `lime` | Calculate lime requirement to raise soil pH |
 | `list-crops` | List all supported crops |
