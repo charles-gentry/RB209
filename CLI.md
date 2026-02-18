@@ -427,6 +427,90 @@ $ rb209 sns --previous-crop cereals --soil-type medium --rainfall medium
 
 ---
 
+### sns-ley
+
+Calculate the Soil Nitrogen Supply (SNS) index from grass ley history using RB209 Table 4.6. Use this when the field has been in grass within the past three years, then compare the result with the field-assessment `sns` result and take the higher of the two indices.
+
+**Usage:**
+
+```
+rb209 sns-ley --ley-age AGE --n-intensity LEVEL --management REGIME --soil-type TYPE --rainfall LEVEL [--year N] [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--ley-age` | Yes | string | `1-2yr`, `3-5yr` | -- | Duration of the grass ley |
+| `--n-intensity` | Yes | string | `low`, `high` | -- | N management intensity (low: <250 kg N/ha/yr; high: >250, clover-rich, or lucerne) |
+| `--management` | Yes | string | `cut`, `grazed`, `1-cut-then-grazed` | -- | Ley management regime |
+| `--soil-type` | Yes | string | `light`, `medium`, `heavy` | -- | Soil type (organic soils not covered by Table 4.6) |
+| `--rainfall` | Yes | string | `low`, `medium`, `high` | -- | Excess winter rainfall category |
+| `--year` | No | int | `1`, `2`, `3` | `1` | Year after ploughing out the ley |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (table):**
+
+```
+$ rb209 sns-ley --ley-age 3-5yr --n-intensity high --management 1-cut-then-grazed --soil-type medium --rainfall medium
++------------------------------+
+| Soil Nitrogen Supply (SNS)   |
++------------------------------+
+|   SNS Index               2  |
+|   Previous crop              |
+|   Soil type          medium  |
+|   Rainfall           medium  |
+|   Method          table-4.6  |
++------------------------------+
+| Table 4.6: 3-5yr ley, high N |
+| , 1-cut-then-grazed manageme |
+| nt, medium soil, medium rain |
+| fall — year 1 after ploughin |
+| g.                           |
++------------------------------+
+```
+
+**Example (JSON):**
+
+```json
+{
+  "sns_index": 2,
+  "previous_crop": "",
+  "soil_type": "medium",
+  "rainfall": "medium",
+  "method": "table-4.6",
+  "smn": null,
+  "crop_n": null,
+  "sns_value": null,
+  "notes": [
+    "Table 4.6: 3-5yr ley, high N, 1-cut-then-grazed management, medium soil, medium rainfall — year 1 after ploughing."
+  ]
+}
+```
+
+**JSON schema:**
+
+The JSON output uses the same `SNSResult` schema as the `sns` and `sns-smn` commands. For Table 4.6 results, `method` is `"table-4.6"`, `previous_crop` is empty, and `smn`/`crop_n`/`sns_value` are `null`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sns_index` | int | Calculated SNS index from Table 4.6 |
+| `previous_crop` | string | Empty string (not applicable for Table 4.6) |
+| `soil_type` | string | Soil type as provided |
+| `rainfall` | string | Rainfall category as provided |
+| `method` | string | Always `"table-4.6"` |
+| `smn` | null | Not applicable |
+| `crop_n` | null | Not applicable |
+| `sns_value` | null | Not applicable |
+| `notes` | string[] | Describes the Table 4.6 lookup parameters |
+
+**Notes:**
+- Organic soils are not covered by Table 4.6 and are rejected at argument parsing.
+- The `--year` parameter represents how many years since the ley was ploughed out. Year 1 = first crop after ploughing, Year 2 = second crop, Year 3 = third crop. SNS indices generally decrease over the three years.
+- RB209 requires comparing this result with the field-assessment SNS (from the `sns` command) and using the higher of the two indices.
+
+---
+
 ### organic
 
 Calculate nutrients supplied by an organic material application.
@@ -793,7 +877,7 @@ Available Organic Materials
 | `heavy` | Clay, deep soils |
 | `organic` | Peaty, organic soils |
 
-Used by `sns`, `lime`, and accepted by those commands via `--soil-type`.
+Used by `sns`, `sns-ley`, `lime`, and accepted by those commands via `--soil-type`. Note that `sns-ley` only accepts `light`, `medium`, and `heavy` (organic soils are not covered by Table 4.6).
 
 ### Previous Crops and N-Residue Categories
 
@@ -885,7 +969,7 @@ A higher SNS index means more nitrogen is already available in the soil, so less
 | `rainfall` | `"low"`, `"medium"`, `"high"` | Rainfall category |
 | `year` | `1`, `2`, `3` | Year after ploughing out the ley (default 1) |
 
-This function is not yet exposed as a CLI subcommand. Use it directly from Python and compare the result with the `sns` command output, taking the higher index.
+This calculation is also available as the [`sns-ley`](#sns-ley) CLI subcommand. Compare the result with the `sns` command output and take the higher index.
 
 ### Straw Management
 

@@ -92,6 +92,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `sulfur` | Sulfur recommendation only |
 | `sns` | Calculate SNS index from field assessment (Tables 4.3–4.5) |
 | `sns-smn` | Calculate SNS index from direct soil mineral N measurement |
+| `sns-ley` | Calculate SNS index from grass ley history (Table 4.6) |
 | `organic` | Calculate nutrients from organic material applications |
 | `lime` | Calculate lime requirement to raise soil pH |
 | `list-crops` | List all supported crops |
