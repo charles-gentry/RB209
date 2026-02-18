@@ -130,20 +130,24 @@ is an empty string for Table 4.6 results, producing a blank row:
 The formatter should either omit the previous-crop row when it is empty, or display
 ley-specific fields (ley age, management, year) for Table 4.6 results.
 
-### 11. Timing/incorporation factors only implemented for pig slurry
+~~### 11. Timing/incorporation factors only implemented for pig slurry~~
 
-**File:** `rb209/data/organic.py:46-48`
+**Fixed.**  `ORGANIC_N_TIMING_FACTORS` now contains entries for all major
+livestock manures and biosolids covered by RB209 Section 2:
 
-`ORGANIC_N_TIMING_FACTORS` only contains data for `"pig-slurry"`.  RB209 Section 2
-(Table 2.12 and related tables) provides timing and incorporation factors for all
-major organic materials (cattle slurry, FYMs, poultry manure, etc.).  Passing
-`timing=` for any other material raises `ValueError`:
+| Material(s) | RB209 Table | DM basis |
+|---|---|---|
+| `cattle-fym`, `pig-fym`, `sheep-fym`, `horse-fym` | Table 2.3 | all FYM (fresh values) |
+| `poultry-litter` | Table 2.6 | 40 % DM |
+| `layer-manure` | Table 2.6 | 20 % DM |
+| `cattle-slurry` | Table 2.9 | 6 % DM |
+| `pig-slurry` | Table 2.12 | 4 % DM (unchanged) |
+| `biosolids-cake` | Table 2.15 | digested cake, 25 % DM |
 
-```
-ValueError: No timing/incorporation factors available for 'cattle-slurry'.
-```
-
-The remaining materials should be added to match the RB209 reference.
+Composts (`green-compost`, `green-food-compost`) and `paper-crumble` have
+no timing table in RB209 and remain flat-coefficient only.  Passing `timing=`
+for these materials still raises `ValueError`.  The docstring in `engine.py`
+and the notes in CLI.md and README.md have been updated accordingly.
 
 ### 12. `Crop` and `CropCategory` enums are defined but never used
 
