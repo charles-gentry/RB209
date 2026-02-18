@@ -7,6 +7,7 @@ from rb209 import __version__
 from rb209.data.crops import CROP_INFO
 from rb209.data.organic import ORGANIC_MATERIAL_INFO
 from rb209.engine import (
+    calculate_grass_ley_sns,
     calculate_lime,
     calculate_organic,
     calculate_smn_sns,
@@ -95,6 +96,18 @@ def _handle_sns(args: argparse.Namespace) -> None:
 
 def _handle_sns_smn(args: argparse.Namespace) -> None:
     result = calculate_smn_sns(args.smn, args.crop_n)
+    print(format_sns(result, args.output_format))
+
+
+def _handle_sns_ley(args: argparse.Namespace) -> None:
+    result = calculate_grass_ley_sns(
+        ley_age=args.ley_age,
+        n_intensity=args.n_intensity,
+        management=args.management,
+        soil_type=args.soil_type,
+        rainfall=args.rainfall,
+        year=args.year,
+    )
     print(format_sns(result, args.output_format))
 
 
@@ -243,6 +256,31 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Estimated crop N at sampling (kg N/ha)")
     _add_format_arg(p_smn)
     p_smn.set_defaults(func=_handle_sns_smn)
+
+    # ── sns-ley ────────────────────────────────────────────────
+    p_ley = subparsers.add_parser(
+        "sns-ley", help="Calculate SNS index from grass ley history (Table 4.6)",
+    )
+    p_ley.add_argument("--ley-age", required=True,
+                        choices=["1-2yr", "3-5yr"],
+                        help="Duration of the grass ley")
+    p_ley.add_argument("--n-intensity", required=True,
+                        choices=["low", "high"],
+                        help="N management intensity (low: <250 kg N/ha/yr, high: >250)")
+    p_ley.add_argument("--management", required=True,
+                        choices=["cut", "grazed", "1-cut-then-grazed"],
+                        help="Ley management regime")
+    p_ley.add_argument("--soil-type", required=True,
+                        choices=["light", "medium", "heavy"],
+                        help="Soil type (organic soils not covered by Table 4.6)")
+    p_ley.add_argument("--rainfall", required=True,
+                        choices=[r.value for r in Rainfall],
+                        help="Excess winter rainfall category")
+    p_ley.add_argument("--year", type=int, default=1,
+                        choices=[1, 2, 3],
+                        help="Year after ploughing out the ley (default: 1)")
+    _add_format_arg(p_ley)
+    p_ley.set_defaults(func=_handle_sns_ley)
 
     # ── organic ──────────────────────────────────────────────────
     p_org = subparsers.add_parser(
