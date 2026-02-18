@@ -105,15 +105,15 @@ for other purposes (e.g. to note their soil type for reporting).  When soil-spec
 data is absent, the engine should fall back to `NITROGEN_RECOMMENDATIONS` rather than
 erroring.
 
-### 9. No CLI subcommand for `calculate_grass_ley_sns` (Table 4.6)
+~~### 9. No CLI subcommand for `calculate_grass_ley_sns` (Table 4.6)~~
 
-**File:** `rb209/cli.py`
-
-The engine exposes `calculate_grass_ley_sns()` for Table 4.6 grass ley SNS lookups,
-but there is no corresponding CLI subcommand (e.g. `sns-ley`).  Users can only access
-this calculation via the Python API.  A `sns-ley` (or `sns --method ley`) subcommand
-accepting `--ley-age`, `--n-intensity`, `--management`, `--soil-type`, `--rainfall`,
-and `--year` would make the feature accessible from the command line.
+**Fixed.**  A new `sns-ley` CLI subcommand has been added to `rb209/cli.py`.  It
+accepts `--ley-age` (`1-2yr` / `3-5yr`), `--n-intensity` (`low` / `high`),
+`--management` (`cut` / `grazed` / `1-cut-then-grazed`), `--soil-type`
+(`light` / `medium` / `heavy`), `--rainfall` (`low` / `medium` / `high`), and
+`--year` (`1` / `2` / `3`, default 1).  Organic soils are excluded at the
+argument-parsing level since Table 4.6 does not cover them.  Output supports
+both `--format table` (default) and `--format json`.
 
 ### 10. `format_sns` displays empty "Previous crop" row for Table 4.6 results
 
