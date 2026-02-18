@@ -9,19 +9,102 @@ Fields: total_n, available_n (crop-available year 1),
 """
 # ── Timing and incorporation factors ────────────────────────────────
 #
-# Table 2.12 (RB209 Section 2): percentage of total N available to the
-# next crop after pig slurry applications (typical value: 4% DM).
+# RB209 Section 2 tables: percentage of total N available to the
+# next crop, by material type, application timing, soil category,
+# and incorporation status.
 #
 # Key: (timing, soil_category, incorporated)
 #   timing:        "autumn" | "winter" | "spring" | "summer"
-#   soil_category: "sandy"  (light / shallow soils)
+#   soil_category: "sandy"       (light / shallow soils)
 #                  "medium_heavy" (medium, heavy, and organic soils)
-#   incorporated:  True  = soil-incorporated within 6 hours of application
+#   incorporated:  True  = soil-incorporated promptly after application
+#                          (within 6 hours for slurries; 24 hours for solids)
 #                  False = surface-applied (not incorporated)
 #
 # Values are fractions of total nitrogen (not percentages).
 # "summer" + incorporated is listed as N/A in RB209 and is omitted.
 
+# Table 2.3 — FYM (all livestock FYM types: cattle, pig, sheep, horse).
+# All FYM types share the same availability fractions.
+# Incorporated values use fresh FYM figures (autumn–winter: same as old;
+# spring: 15 % for fresh vs 10 % for old FYM).
+_FYM_N_FACTORS: dict[tuple, float] = {
+    ("autumn", "sandy",        False): 0.05,
+    ("autumn", "medium_heavy", False): 0.10,
+    ("winter", "sandy",        False): 0.10,
+    ("winter", "medium_heavy", False): 0.10,
+    ("spring", "sandy",        False): 0.10,
+    ("spring", "medium_heavy", False): 0.10,
+    ("summer", "sandy",        False): 0.10,
+    ("summer", "medium_heavy", False): 0.10,
+    ("autumn", "sandy",        True):  0.05,
+    ("autumn", "medium_heavy", True):  0.10,
+    ("winter", "sandy",        True):  0.10,
+    ("winter", "medium_heavy", True):  0.10,
+    ("spring", "sandy",        True):  0.15,
+    ("spring", "medium_heavy", True):  0.15,
+    # ("summer", ..., True) -> N/A in RB209
+}
+
+# Table 2.6 — Poultry litter / broiler-turkey litter (typically ~40 % DM).
+_POULTRY_LITTER_N_FACTORS: dict[tuple, float] = {
+    ("autumn", "sandy",        False): 0.10,
+    ("autumn", "medium_heavy", False): 0.25,
+    ("winter", "sandy",        False): 0.20,
+    ("winter", "medium_heavy", False): 0.25,
+    ("spring", "sandy",        False): 0.30,
+    ("spring", "medium_heavy", False): 0.30,
+    ("summer", "sandy",        False): 0.30,
+    ("summer", "medium_heavy", False): 0.30,
+    ("autumn", "sandy",        True):  0.10,
+    ("autumn", "medium_heavy", True):  0.30,
+    ("winter", "sandy",        True):  0.20,
+    ("winter", "medium_heavy", True):  0.30,
+    ("spring", "sandy",        True):  0.40,
+    ("spring", "medium_heavy", True):  0.40,
+    # ("summer", ..., True) -> N/A in RB209
+}
+
+# Table 2.6 — Layer manure (typically ~20 % DM).
+_LAYER_MANURE_N_FACTORS: dict[tuple, float] = {
+    ("autumn", "sandy",        False): 0.15,
+    ("autumn", "medium_heavy", False): 0.25,
+    ("winter", "sandy",        False): 0.25,
+    ("winter", "medium_heavy", False): 0.25,
+    ("spring", "sandy",        False): 0.35,
+    ("spring", "medium_heavy", False): 0.35,
+    ("summer", "sandy",        False): 0.35,
+    ("summer", "medium_heavy", False): 0.35,
+    ("autumn", "sandy",        True):  0.15,
+    ("autumn", "medium_heavy", True):  0.35,
+    ("winter", "sandy",        True):  0.25,
+    ("winter", "medium_heavy", True):  0.40,
+    ("spring", "sandy",        True):  0.50,
+    ("spring", "medium_heavy", True):  0.50,
+    # ("summer", ..., True) -> N/A in RB209
+}
+
+# Table 2.9 — Cattle slurry liquid (typical 6 % DM).
+_CATTLE_SLURRY_N_FACTORS: dict[tuple, float] = {
+    ("autumn", "sandy",        False): 0.05,
+    ("autumn", "medium_heavy", False): 0.25,
+    ("winter", "sandy",        False): 0.25,
+    ("winter", "medium_heavy", False): 0.25,
+    ("spring", "sandy",        False): 0.35,
+    ("spring", "medium_heavy", False): 0.35,
+    ("summer", "sandy",        False): 0.25,
+    ("summer", "medium_heavy", False): 0.25,
+    ("autumn", "sandy",        True):  0.05,
+    ("autumn", "medium_heavy", True):  0.30,
+    ("winter", "sandy",        True):  0.20,
+    ("winter", "medium_heavy", True):  0.30,
+    ("spring", "sandy",        True):  0.40,
+    ("spring", "medium_heavy", True):  0.40,
+    # ("summer", ..., True) -> N/A in RB209
+}
+
+# Table 2.12 (RB209 Section 2): percentage of total N available to the
+# next crop after pig slurry applications (typical value: 4% DM).
 _PIG_SLURRY_N_FACTORS: dict[tuple, float] = {
     ("autumn", "sandy",        False): 0.10,
     ("autumn", "medium_heavy", False): 0.30,
@@ -40,11 +123,42 @@ _PIG_SLURRY_N_FACTORS: dict[tuple, float] = {
     # ("summer", ..., True) -> N/A in RB209
 }
 
+# Table 2.15 — Biosolids digested cake (typical 25 % DM).
+# All four biosolids product types have identical values; digested cake
+# is the default for the "biosolids-cake" material entry.
+_BIOSOLIDS_CAKE_N_FACTORS: dict[tuple, float] = {
+    ("autumn", "sandy",        False): 0.10,
+    ("autumn", "medium_heavy", False): 0.15,
+    ("winter", "sandy",        False): 0.15,
+    ("winter", "medium_heavy", False): 0.15,
+    ("spring", "sandy",        False): 0.15,
+    ("spring", "medium_heavy", False): 0.15,
+    ("summer", "sandy",        False): 0.15,
+    ("summer", "medium_heavy", False): 0.15,
+    ("autumn", "sandy",        True):  0.10,
+    ("autumn", "medium_heavy", True):  0.15,
+    ("winter", "sandy",        True):  0.15,
+    ("winter", "medium_heavy", True):  0.15,
+    ("spring", "sandy",        True):  0.20,
+    ("spring", "medium_heavy", True):  0.20,
+    # ("summer", ..., True) -> N/A in RB209
+}
+
 # Maps each organic-material key to its timing-factor table.
 # Only materials for which RB209 provides timing/incorporation data
-# are included.
+# are included.  Composts (green-compost, green-food-compost) and
+# paper-crumble are not listed in any RB209 timing table and therefore
+# do not have entries here; use the flat available_n coefficient instead.
 ORGANIC_N_TIMING_FACTORS: dict[str, dict[tuple, float]] = {
-    "pig-slurry": _PIG_SLURRY_N_FACTORS,
+    "cattle-fym":      _FYM_N_FACTORS,
+    "pig-fym":         _FYM_N_FACTORS,
+    "sheep-fym":       _FYM_N_FACTORS,
+    "horse-fym":       _FYM_N_FACTORS,
+    "poultry-litter":  _POULTRY_LITTER_N_FACTORS,
+    "layer-manure":    _LAYER_MANURE_N_FACTORS,
+    "cattle-slurry":   _CATTLE_SLURRY_N_FACTORS,
+    "pig-slurry":      _PIG_SLURRY_N_FACTORS,
+    "biosolids-cake":  _BIOSOLIDS_CAKE_N_FACTORS,
 }
 
 # Maps SoilType values to the two soil categories used in timing tables.

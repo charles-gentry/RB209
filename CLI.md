@@ -512,10 +512,21 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
 | `so3` | float | Sulfur as SO3 (kg/ha) |
 
 **Notes:**
-- `total_n` is the total nitrogen in the application. `available_n` is the portion available to the crop in year 1 (typically 10–30 % of total N for farmyard manures, higher for slurries).
+- `total_n` is the total nitrogen in the application. `available_n` is the portion available to the crop in year 1 (typically 5–15 % of total N for farmyard manures and composts, higher for slurries and poultry manures).
 - Solid materials (FYM, compost, cake, litter) use t/ha. Slurries use m3/ha. See [Organic Materials](#organic-materials) for units per material.
 - Nutrient values are calculated as `per_unit_content × rate`, rounded to 1 decimal place.
-- **Timing-adjusted available-N** is currently supported for `pig-slurry` only, using RB209 Table 2.12 percentage factors. When `--timing` is omitted, the flat default coefficient is used (60 % of total N for pig slurry, reflecting a spring application). Timing seasons: `autumn` = Aug–Oct, `winter` = Nov–Jan, `spring` = Feb–Apr, `summer` = grassland use only. Incorporating slurry promptly (`--incorporated`) increases the retained nitrogen; for pig slurry in spring this raises available N from 50 % to 60 % of total N. The `--soil-type` argument selects the correct column in Table 2.12 — `light` maps to the sandy/shallow category; all other soil types map to medium/heavy.
+- **Timing-adjusted available-N** is supported for all major livestock manures and biosolids using the RB209 Section 2 percentage factors. When `--timing` is omitted, the flat default available-N coefficient from the RB209 typical-values tables is used. Timing seasons: `autumn` = Aug–Oct, `winter` = Nov–Jan, `spring` = Feb–Apr, `summer` = grassland use only. The `--soil-type` argument selects the correct soil column — `light` maps to the sandy/shallow category; all other soil types map to medium/heavy. Incorporating promptly (`--incorporated`) increases retained nitrogen for most materials; summer + incorporated is not applicable (N/A in RB209) for any material. Supported materials and their RB209 table references:
+
+  | Material | RB209 Table | Incorporation window |
+  |----------|-------------|----------------------|
+  | `cattle-fym`, `pig-fym`, `sheep-fym`, `horse-fym` | Table 2.3 | 24 h |
+  | `poultry-litter` | Table 2.6 (40 % DM) | 24 h |
+  | `layer-manure` | Table 2.6 (20 % DM) | 24 h |
+  | `cattle-slurry` | Table 2.9 (6 % DM) | 6 h |
+  | `pig-slurry` | Table 2.12 (4 % DM) | 6 h |
+  | `biosolids-cake` | Table 2.15 (digested cake) | 24 h |
+
+  Composts (`green-compost`, `green-food-compost`) and `paper-crumble` do not have timing tables in RB209; for these materials the `--timing` flag is not supported and the flat default coefficient is always used.
 
 ---
 
@@ -903,9 +914,9 @@ The maximum single application is 7.5 t/ha. If the calculated requirement exceed
 
 ### Organic Material Nutrients
 
-Organic materials (manures, slurries, composts) supply multiple nutrients. The `organic` command reports both **total nitrogen** and **available nitrogen** (crop-available in year 1). Available N is typically 10–30 % of total N for farmyard manures, and higher (35–60 %) for slurries and poultry manures.
+Organic materials (manures, slurries, composts) supply multiple nutrients. The `organic` command reports both **total nitrogen** and **available nitrogen** (crop-available in year 1). Available N is typically 5–15 % of total N for farmyard manures, and higher (25–60 %) for slurries and poultry manures.
 
-By default, `available_n` is calculated from the flat per-unit coefficient in the RB209 typical-values tables. For **pig slurry**, the more accurate approach from RB209 Section 2 (Table 2.12) is available via the `--timing`, `--incorporated`, and `--soil-type` flags: the available-N fraction ranges from 10 % (autumn, sandy soil, surface-applied) to 60 % (spring, any soil, incorporated within 6 hours). See the [`organic` command](#organic) for details.
+By default, `available_n` is calculated from the flat per-unit coefficient in the RB209 typical-values tables. For all major livestock manures and biosolids, the more accurate approach from RB209 Section 2 is available via the `--timing`, `--incorporated`, and `--soil-type` flags. The available-N fraction varies by material, timing, soil category, and whether the material is incorporated. For example, cattle slurry ranges from 5 % (autumn, sandy, surface-applied) to 40 % (spring, any soil, incorporated within 6 hours), and pig slurry from 10 % to 60 %. See the [`organic` command](#organic) for the full list of supported materials and their RB209 table references.
 
 ### Nutrient Units
 

@@ -489,7 +489,7 @@ def calculate_organic(
             raise ValueError(
                 f"No timing factor for material='{material}', timing='{timing}', "
                 f"soil_category='{soil_cat}', incorporated={incorporated}. "
-                "Check that the combination is defined in RB209 Table 2.12."
+                "Check that the combination is defined in the relevant RB209 Section 2 table."
             )
         n_factor = timing_table[key]
         available_n = round(n_factor * info["total_n"] * rate, 1)
