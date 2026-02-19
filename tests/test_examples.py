@@ -17,6 +17,7 @@ from rb209.engine import (
     calculate_organic,
     calculate_smn_sns,
     calculate_sns,
+    combine_sns,
     recommend_nitrogen,
     sns_value_to_index,
 )
@@ -244,11 +245,19 @@ class TestRB209Examples(unittest.TestCase):
         self.assertEqual(result.sns_index, 2)
         self.assertEqual(result.method, "table-4.6")
 
-    @unittest.skip(
-        "'Take higher of two SNS values' logic not implemented"
-    )
     def test_example_4_5_combined_sns_take_higher(self):
         """Final SNS = max(Table 4.5 result, Table 4.6 result) = max(1, 2) = 2."""
+        field_sns = calculate_sns("cereals", "heavy", "high")  # SNS 1
+        ley_sns = calculate_grass_ley_sns(
+            ley_age="1-2yr",
+            n_intensity="high",
+            management="grazed",
+            soil_type="heavy",
+            rainfall="high",
+            year=2,
+        )  # SNS 2
+        combined = combine_sns(field_sns, ley_sns)
+        self.assertEqual(combined.sns_index, 2)
 
     @unittest.skip(
         "Second-previous-crop (crop history) not supported by calculate_sns"

@@ -2,7 +2,7 @@
 
 Items identified from the test suite and a full code review.
 
-**Test summary:** 0 failed, 114 passed, 4 skipped (118 total).
+**Test summary:** 0 failed, 115 passed, 3 skipped (118 total).
 
 ---
 
@@ -63,13 +63,14 @@ After a grass ley, RB209 specifies reduced SNS indices for the next two crops in
 sequence (e.g. SNS 2 → 2 → 1).  The engine has no concept of crop sequence; only
 the immediate previous crop is considered.
 
-### 6. "Take the higher of two SNS values" logic
+~~### 6. "Take the higher of two SNS values" logic~~
 
-**Test:** `test_example_4_5_combined_sns_take_higher`
-
-When both field-assessment (Table 4.5) and grass-ley (Table 4.6) methods apply,
-RB209 requires using the higher of the two SNS indices.  This comparison/selection
-step is not implemented.
+**Fixed.**  A new `combine_sns()` engine function accepts two or more `SNSResult`
+objects and returns the one with the highest `sns_index`.  When both
+field-assessment (Table 4.3/4.4/4.5) and grass-ley (Table 4.6) methods apply,
+callers use `combine_sns(field_result, ley_result)` to select the higher SNS
+index, as required by RB209.  Test `test_example_4_5_combined_sns_take_higher`
+now passes: `max(SNS 1, SNS 2) = SNS 2` for Example 4.5.
 
 ### 7. Crop history / second-previous-crop support in `calculate_sns`
 
