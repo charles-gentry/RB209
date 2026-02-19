@@ -192,13 +192,33 @@ class TestRB209Examples(unittest.TestCase):
         A 3-year ley falls between these categories.
         """
 
-    @unittest.skip(
-        "Subsequent crop SNS reduction (SNS 2 -> 2 -> 1) not implemented"
-    )
     def test_example_4_4_subsequent_crop_sns(self):
         """The SNS Indices for the next two crops following the winter barley
         are Index 2 and Index 1, respectively.
+
+        Year 1 (winter barley) = SNS 2 (tested above).
+        Year 2 (next crop)     = SNS 2.
+        Year 3 (crop after)    = SNS 1.
         """
+        year2 = calculate_grass_ley_sns(
+            ley_age="3-5yr",
+            n_intensity="high",
+            management="1-cut-then-grazed",
+            soil_type="medium",
+            rainfall="medium",
+            year=2,
+        )
+        self.assertEqual(year2.sns_index, 2)
+
+        year3 = calculate_grass_ley_sns(
+            ley_age="3-5yr",
+            n_intensity="high",
+            management="1-cut-then-grazed",
+            soil_type="medium",
+            rainfall="medium",
+            year=3,
+        )
+        self.assertEqual(year3.sns_index, 1)
 
     # ── Example 4.5 ─────────────────────────────────────────────────
     # Winter wheat after spring barley that followed a 2-year grazed ley.

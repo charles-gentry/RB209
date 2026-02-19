@@ -2,7 +2,7 @@
 
 Items identified from the test suite and a full code review.
 
-**Test summary:** 0 failed, 115 passed, 3 skipped (118 total).
+**Test summary:** 0 failed, 116 passed, 2 skipped (118 total).
 
 ---
 
@@ -55,13 +55,14 @@ The previous-crop catalogue only contains `grass-1-2yr` and `grass-long-term`.
 A 3-year ley falls between these categories.  A `grass-3-5yr` (or equivalent)
 previous-crop type is needed to match RB209 Table 4.6.
 
-### 5. Subsequent-crop SNS reduction after grass ley
+~~### 5. Subsequent-crop SNS reduction after grass ley~~
 
-**Test:** `test_example_4_4_subsequent_crop_sns`
-
-After a grass ley, RB209 specifies reduced SNS indices for the next two crops in
-sequence (e.g. SNS 2 → 2 → 1).  The engine has no concept of crop sequence; only
-the immediate previous crop is considered.
+**Fixed.**  The `calculate_grass_ley_sns()` function already supports a `year`
+parameter (1, 2, or 3) that returns the correct SNS index for each year after
+ploughing out a grass ley.  For Example 4.4 (3–5yr ley, high N,
+1-cut-then-grazed, medium soil, medium rainfall) the lookup yields SNS 2, 2, 1
+for years 1–3 respectively.  Test `test_example_4_4_subsequent_crop_sns` now
+passes, verifying the year 2 (SNS 2) and year 3 (SNS 1) values.
 
 ~~### 6. "Take the higher of two SNS values" logic~~
 
