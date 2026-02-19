@@ -265,6 +265,26 @@ def calculate_grass_ley_sns(
     )
 
 
+def combine_sns(*results: SNSResult) -> SNSResult:
+    """Return the SNS result with the highest index.
+
+    When both a field-assessment (Table 4.3/4.4/4.5) and a grass-ley
+    (Table 4.6) SNS index are available, RB209 requires using the higher
+    of the two values.  This function accepts two or more SNSResult objects
+    and returns the one with the largest ``sns_index``.  If there is a tie,
+    the first result with that index is returned.
+
+    Args:
+        *results: Two or more SNSResult objects to compare.
+
+    Returns:
+        The SNSResult with the highest sns_index.
+    """
+    if len(results) < 2:
+        raise ValueError("combine_sns requires at least two SNSResult objects")
+    return max(results, key=lambda r: r.sns_index)
+
+
 # ── Nitrogen ────────────────────────────────────────────────────────
 
 def recommend_nitrogen(
