@@ -5,8 +5,7 @@ from Section 4 of the RB209 9th edition.  Tests assert the published RB209
 values as the source of truth.  Where the code's current data tables differ,
 the test will fail — highlighting a data correction needed.
 
-Features not yet implemented (SMN method, Table 4.6 grass ley management,
-timing/incorporation adjustment factors, crop history) are marked with
+Features not yet implemented (crop history) are marked with
 @unittest.skip.
 """
 
@@ -186,11 +185,24 @@ class TestRB209Examples(unittest.TestCase):
         self.assertEqual(result.sns_index, 2)
         self.assertEqual(result.method, "table-4.6")
 
-    @unittest.skip("3-year grass ley category not available as previous crop")
     def test_example_4_4_three_year_ley_category(self):
-        """The code only has grass-1-2yr and grass-long-term.
-        A 3-year ley falls between these categories.
+        """A 3-year ley maps to grass-3-5yr with HIGH N-residue category.
+
+        RB209 reserves VERY HIGH for long-term grass (5+ years).
+        A 3–5 year ley has the same HIGH category as a 1–2 year ley
+        for field-assessment purposes.
         """
+        self.assertEqual(
+            PreviousCrop.GRASS_3_5_YEAR.value, "grass-3-5yr"
+        )
+        self.assertEqual(
+            PREVIOUS_CROP_N_CATEGORY[PreviousCrop.GRASS_3_5_YEAR],
+            NResidueCategory.HIGH,
+        )
+        # Field assessment with grass-3-5yr produces a valid SNS result
+        result = calculate_sns("grass-3-5yr", "medium", "medium")
+        self.assertEqual(result.sns_index, 3)
+        self.assertEqual(result.previous_crop, "grass-3-5yr")
 
     def test_example_4_4_subsequent_crop_sns(self):
         """The SNS Indices for the next two crops following the winter barley

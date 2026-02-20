@@ -62,6 +62,7 @@ class PreviousCrop(Enum):
     FORAGE_MAIZE = "forage-maize"
     SET_ASIDE = "set-aside"
     GRASS_1_2_YEAR = "grass-1-2yr"
+    GRASS_3_5_YEAR = "grass-3-5yr"
     GRASS_LONG_TERM = "grass-long-term"
     VEGETABLES = "vegetables"
     FALLOW = "fallow"
@@ -110,6 +111,7 @@ PREVIOUS_CROP_N_CATEGORY: dict[PreviousCrop, NResidueCategory] = {
     PreviousCrop.PEAS_BEANS: NResidueCategory.HIGH,
     PreviousCrop.VEGETABLES: NResidueCategory.HIGH,
     PreviousCrop.GRASS_1_2_YEAR: NResidueCategory.HIGH,
+    PreviousCrop.GRASS_3_5_YEAR: NResidueCategory.HIGH,
     PreviousCrop.GRASS_LONG_TERM: NResidueCategory.VERY_HIGH,
 }
 
