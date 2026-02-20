@@ -2,7 +2,7 @@
 
 Items identified from the test suite and a full code review.
 
-**Test summary:** 0 failed, 116 passed, 2 skipped (118 total).
+**Test summary:** 0 failed, 117 passed, 1 skipped (118 total).
 
 ---
 
@@ -47,13 +47,15 @@ Tests now passing:
 - `test_example_4_5_table_4_6_grass_ley_sns`: 1–2yr ley, high N, grazed, heavy soil,
   high rainfall → Year 2 = SNS 2 (Example 4.5 — winter wheat is 2nd crop after the ley)
 
-### 4. Intermediate grass ley duration category (3-year ley)
+~~### 4. Intermediate grass ley duration category (3-year ley)~~
 
-**Test:** `test_example_4_4_three_year_ley_category`
-
-The previous-crop catalogue only contains `grass-1-2yr` and `grass-long-term`.
-A 3-year ley falls between these categories.  A `grass-3-5yr` (or equivalent)
-previous-crop type is needed to match RB209 Table 4.6.
+**Fixed.**  A new `GRASS_3_5_YEAR = "grass-3-5yr"` member has been added to the
+`PreviousCrop` enum in `rb209/models.py`.  It is mapped to `NResidueCategory.HIGH`
+in `PREVIOUS_CROP_N_CATEGORY` — the same category as 1–2 year grass, since RB209
+reserves VERY HIGH for long-term grass (5+ years).  This allows `calculate_sns()`
+to accept `"grass-3-5yr"` as a previous crop for the field assessment method
+(Tables 4.3–4.5), and it is also available as a `--previous-crop` choice in the
+`sns` CLI subcommand.  Test `test_example_4_4_three_year_ley_category` now passes.
 
 ~~### 5. Subsequent-crop SNS reduction after grass ley~~
 
