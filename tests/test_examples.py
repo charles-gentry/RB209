@@ -4,9 +4,6 @@ Each test method corresponds to a step in one of the five worked examples
 from Section 4 of the RB209 9th edition.  Tests assert the published RB209
 values as the source of truth.  Where the code's current data tables differ,
 the test will fail — highlighting a data correction needed.
-
-Features not yet implemented (crop history) are marked with
-@unittest.skip.
 """
 
 import unittest
@@ -291,14 +288,27 @@ class TestRB209Examples(unittest.TestCase):
         combined = combine_sns(field_sns, ley_sns)
         self.assertEqual(combined.sns_index, 2)
 
-    @unittest.skip(
-        "Second-previous-crop (crop history) not supported by calculate_sns"
-    )
     def test_example_4_5_crop_history(self):
-        """calculate_sns only considers the immediate previous crop.
-        Example 4.5 requires considering the grass ley that preceded
-        the spring barley.
+        """calculate_sns with grass_history combines field assessment (SNS 1)
+        with Table 4.6 year 2 (SNS 2) and returns the higher (SNS 2).
+
+        Example 4.5: winter wheat after spring barley (cereals) that followed
+        a 2-year grazed ley with high N (300 kg/ha/yr).  Heavy soil, high
+        rainfall.
         """
+        result = calculate_sns(
+            "cereals",
+            "heavy",
+            "high",
+            grass_history={
+                "ley_age": "1-2yr",
+                "n_intensity": "high",
+                "management": "grazed",
+                "year": 2,
+            },
+        )
+        self.assertEqual(result.sns_index, 2)
+        self.assertEqual(result.method, "combined")
 
 
 if __name__ == "__main__":

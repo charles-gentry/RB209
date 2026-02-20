@@ -2,7 +2,7 @@
 
 Items identified from the test suite and a full code review.
 
-**Test summary:** 0 failed, 117 passed, 1 skipped (118 total).
+**Test summary:** 0 failed, 118 passed, 0 skipped (118 total).
 
 ---
 
@@ -75,14 +75,25 @@ callers use `combine_sns(field_result, ley_result)` to select the higher SNS
 index, as required by RB209.  Test `test_example_4_5_combined_sns_take_higher`
 now passes: `max(SNS 1, SNS 2) = SNS 2` for Example 4.5.
 
-### 7. Crop history / second-previous-crop support in `calculate_sns`
+~~### 7. Crop history / second-previous-crop support in `calculate_sns`~~
 
-**Test:** `test_example_4_5_crop_history`
+**Fixed.**  `calculate_sns()` now accepts an optional keyword argument
+`grass_history` — a dict with keys `ley_age`, `n_intensity`, `management`,
+and optionally `year` (defaults to 2).  When provided, the function performs
+both the normal field-assessment SNS lookup and a Table 4.6 grass ley lookup,
+then returns the higher of the two indices with `method="combined"` and notes
+describing both assessments.  This covers the common rotation scenario where
+the current crop's previous crop was an arable crop that itself followed a
+grass ley (e.g. winter wheat → spring barley → grass ley).
 
-`calculate_sns` only accepts a single previous crop.  Example 4.5 requires knowing
-the crop that preceded the immediate previous crop (a 2-year ley before spring
-barley) to apply Table 4.6 correctly.  The function signature and SNS logic need
-extending to accept an optional crop-history chain.
+The `sns` CLI subcommand has been extended with optional `--ley-age`,
+`--ley-n-intensity`, `--ley-management`, and `--ley-year` flags.  When
+`--ley-age` is provided, all three ley flags are required and the combined
+assessment is performed automatically.
+
+Test `test_example_4_5_crop_history` now passes: cereals + heavy soil + high
+rainfall gives field-assessment SNS 1; a 1–2yr high-N grazed ley at year 2
+gives Table 4.6 SNS 2; combined result = SNS 2.
 
 ---
 
