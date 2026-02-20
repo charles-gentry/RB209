@@ -56,16 +56,30 @@ def calculate_sns(
     previous_crop: str,
     soil_type: str,
     rainfall: str,
+    *,
+    grass_history: dict | None = None,
 ) -> SNSResult:
     """Calculate Soil Nitrogen Supply index using the field assessment method.
+
+    When ``grass_history`` is provided, the function also calculates an SNS
+    index from Table 4.6 (grass ley history) and returns the higher of the two
+    indices, as required by RB209.  This covers the common scenario where the
+    current crop's previous crop was an arable crop that itself followed a
+    grass ley (e.g. winter wheat after spring barley after a 2-year ley).
 
     Args:
         previous_crop: Previous crop value (e.g. "cereals", "oilseed-rape").
         soil_type: Soil type ("light", "medium", "heavy", "organic").
         rainfall: Excess winter rainfall category ("low", "medium", "high").
+        grass_history: Optional dict with grass ley parameters for Table 4.6
+            combined assessment.  Keys: ``ley_age`` ("1-2yr" / "3-5yr"),
+            ``n_intensity`` ("low" / "high"), ``management`` ("cut" /
+            "grazed" / "1-cut-then-grazed"), and optionally ``year``
+            (1/2/3, default 2).
 
     Returns:
-        SNSResult with the calculated SNS index.
+        SNSResult with the calculated SNS index.  When grass_history is used,
+        method is "combined" and notes describe both assessments.
     """
     # Validate enums
     try:
@@ -92,9 +106,34 @@ def calculate_sns(
     key = (n_cat.value, soil_type, rainfall)
     sns_index = SNS_LOOKUP[key]
 
-    notes = [
+    field_notes = [
         f"Previous crop '{previous_crop}' has {n_cat.value} N residue.",
     ]
+
+    if grass_history is not None:
+        ley_result = calculate_grass_ley_sns(
+            ley_age=grass_history["ley_age"],
+            n_intensity=grass_history["n_intensity"],
+            management=grass_history["management"],
+            soil_type=soil_type,
+            rainfall=rainfall,
+            year=grass_history.get("year", 2),
+        )
+        best_index = max(sns_index, ley_result.sns_index)
+        notes = field_notes + ley_result.notes
+        notes.append(
+            f"Combined: field-assessment SNS {sns_index}, "
+            f"Table 4.6 SNS {ley_result.sns_index} — "
+            f"using higher value (SNS {best_index})."
+        )
+        return SNSResult(
+            sns_index=best_index,
+            previous_crop=previous_crop,
+            soil_type=soil_type,
+            rainfall=rainfall,
+            method="combined",
+            notes=notes,
+        )
 
     return SNSResult(
         sns_index=sns_index,
@@ -102,7 +141,7 @@ def calculate_sns(
         soil_type=soil_type,
         rainfall=rainfall,
         method="field-assessment",
-        notes=notes,
+        notes=field_notes,
     )
 
 

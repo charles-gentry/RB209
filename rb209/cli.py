@@ -90,7 +90,26 @@ def _handle_sulfur(args: argparse.Namespace) -> None:
 
 
 def _handle_sns(args: argparse.Namespace) -> None:
-    result = calculate_sns(args.previous_crop, args.soil_type, args.rainfall)
+    grass_history = None
+    ley_flags = (args.ley_age, args.ley_n_intensity, args.ley_management)
+    if any(f is not None for f in ley_flags):
+        if not all(f is not None for f in ley_flags):
+            print(
+                "Error: --ley-age, --ley-n-intensity, and --ley-management "
+                "must all be provided together.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        grass_history = {
+            "ley_age": args.ley_age,
+            "n_intensity": args.ley_n_intensity,
+            "management": args.ley_management,
+            "year": args.ley_year,
+        }
+    result = calculate_sns(
+        args.previous_crop, args.soil_type, args.rainfall,
+        grass_history=grass_history,
+    )
     print(format_sns(result, args.output_format))
 
 
@@ -243,6 +262,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_sns.add_argument("--rainfall", required=True,
                         choices=[r.value for r in Rainfall],
                         help="Excess winter rainfall category")
+    p_sns.add_argument("--ley-age", default=None,
+                        choices=["1-2yr", "3-5yr"],
+                        help=(
+                            "Grass ley duration for combined assessment "
+                            "(requires --ley-n-intensity and --ley-management)"
+                        ))
+    p_sns.add_argument("--ley-n-intensity", default=None,
+                        choices=["low", "high"],
+                        help="N management intensity of the grass ley")
+    p_sns.add_argument("--ley-management", default=None,
+                        choices=["cut", "grazed", "1-cut-then-grazed"],
+                        help="Ley management regime")
+    p_sns.add_argument("--ley-year", type=int, default=2,
+                        choices=[1, 2, 3],
+                        help="Year after ploughing out the ley (default: 2)")
     _add_format_arg(p_sns)
     p_sns.set_defaults(func=_handle_sns)
 

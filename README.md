@@ -6,6 +6,7 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 - Nitrogen, phosphorus, potassium, magnesium, sulfur, and lime recommendations
 - Soil Nitrogen Supply (SNS) index via field assessment (Tables 4.3–4.5) or direct SMN measurement
 - Grass ley SNS calculation from RB209 Table 4.6 — looks up SNS indices by ley age (1–2yr / 3–5yr), N-intensity, and management regime (cut / grazed / 1-cut-then-grazed) for up to three years after ploughing out, with `combine_sns` to select the higher of field-assessment and grass-ley SNS indices as required by RB209
+- Crop history support — `calculate_sns` accepts an optional `grass_history` parameter to automatically combine field-assessment and Table 4.6 results when the previous crop followed a grass ley (e.g. winter wheat after spring barley after a 2-year ley)
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for all major livestock manures and biosolids (RB209 Section 2 Tables 2.3, 2.6, 2.9, 2.12, 2.15)
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies

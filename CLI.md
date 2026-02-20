@@ -360,24 +360,28 @@ $ rb209 sulfur --crop winter-oilseed-rape
 
 ### sns
 
-Calculate the Soil Nitrogen Supply (SNS) index for a field using the field assessment method.
+Calculate the Soil Nitrogen Supply (SNS) index for a field using the field assessment method. Optionally, supply grass ley history flags to perform a combined assessment (field-assessment + Table 4.6) in a single command.
 
 **Usage:**
 
 ```
-rb209 sns --previous-crop CROP --soil-type TYPE --rainfall LEVEL [--format FORMAT]
+rb209 sns --previous-crop CROP --soil-type TYPE --rainfall LEVEL [--ley-age AGE --ley-n-intensity LEVEL --ley-management REGIME] [--ley-year N] [--format FORMAT]
 ```
 
 **Arguments:**
 
 | Argument | Required | Type | Valid Values | Default | Description |
 |----------|----------|------|--------------|---------|-------------|
-| `--previous-crop` | Yes | string | `cereals`, `oilseed-rape`, `potatoes`, `sugar-beet`, `peas-beans`, `linseed`, `forage-maize`, `set-aside`, `grass-1-2yr`, `grass-long-term`, `vegetables`, `fallow` | -- | Previous crop grown in this field |
+| `--previous-crop` | Yes | string | `cereals`, `oilseed-rape`, `potatoes`, `sugar-beet`, `peas-beans`, `linseed`, `forage-maize`, `set-aside`, `grass-1-2yr`, `grass-3-5yr`, `grass-long-term`, `vegetables`, `fallow` | -- | Previous crop grown in this field |
 | `--soil-type` | Yes | string | `light`, `medium`, `heavy`, `organic` | -- | Soil texture category |
 | `--rainfall` | Yes | string | `low`, `medium`, `high` | -- | Excess winter rainfall category |
+| `--ley-age` | No | string | `1-2yr`, `3-5yr` | -- | Grass ley duration for combined assessment (requires `--ley-n-intensity` and `--ley-management`) |
+| `--ley-n-intensity` | No | string | `low`, `high` | -- | N management intensity of the grass ley |
+| `--ley-management` | No | string | `cut`, `grazed`, `1-cut-then-grazed` | -- | Ley management regime |
+| `--ley-year` | No | int | `1`, `2`, `3` | `2` | Year after ploughing out the ley |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
-**Example (table):**
+**Example (field assessment only):**
 
 ```
 $ rb209 sns --previous-crop cereals --soil-type medium --rainfall medium
@@ -394,6 +398,15 @@ $ rb209 sns --previous-crop cereals --soil-type medium --rainfall medium
 | N residue.                       |
 +----------------------------------+
 ```
+
+**Example (combined assessment with grass ley history):**
+
+```
+$ rb209 sns --previous-crop cereals --soil-type heavy --rainfall high \
+    --ley-age 1-2yr --ley-n-intensity high --ley-management grazed --ley-year 2
+```
+
+This performs both the field assessment (cereals, heavy, high → SNS 1) and the Table 4.6 lookup (1–2yr ley, high N, grazed, year 2 → SNS 2) and returns the higher value (SNS 2) with `method="combined"`.
 
 **Example (JSON):**
 
@@ -418,12 +431,13 @@ $ rb209 sns --previous-crop cereals --soil-type medium --rainfall medium
 | `previous_crop` | string | Previous crop value as provided |
 | `soil_type` | string | Soil type as provided |
 | `rainfall` | string | Rainfall category as provided |
-| `method` | string | Always `"field-assessment"` |
-| `notes` | string[] | Includes the N-residue category of the previous crop |
+| `method` | string | `"field-assessment"` or `"combined"` (when ley flags are used) |
+| `notes` | string[] | Includes the N-residue category of the previous crop; when combined, also includes Table 4.6 details and which value was selected |
 
 **Notes:**
 - The SNS index is derived from a three-way lookup: previous crop determines an N-residue category (low/medium/high/very-high), which combines with soil type and rainfall to produce the index. See [Previous Crops and N-Residue Categories](#previous-crops-and-n-residue-categories) for the mapping.
 - Use the resulting `sns_index` value as the `--sns-index` argument to `recommend` or `nitrogen`.
+- **Combined assessment:** When `--ley-age` is provided, `--ley-n-intensity` and `--ley-management` are also required. The command performs both the field-assessment and Table 4.6 lookups and returns the higher SNS index, as required by RB209. The `--ley-year` defaults to 2 (the crop is typically the second crop after the ley was ploughed out). Organic soils are not supported for the grass ley component (Table 4.6 does not cover them).
 
 ---
 
@@ -896,6 +910,7 @@ Used by the `sns` command via `--previous-crop`. The previous crop determines an
 | `peas-beans` | high |
 | `vegetables` | high |
 | `grass-1-2yr` | high |
+| `grass-3-5yr` | high |
 | `grass-long-term` | very-high |
 
 ### Rainfall Categories
