@@ -114,8 +114,8 @@ rb209 recommend --crop CROP --sns-index N --p-index N --k-index N [options]
 | `--p-index` | Yes | int | `0` to `9` | -- | Soil phosphorus index (clamped to 4) |
 | `--k-index` | Yes | int | `0` to `9` | -- | Soil potassium index (clamped to 4) |
 | `--mg-index` | No | int | `0` to `9` | `2` | Soil magnesium index (clamped to 4) |
-| `--straw-removed` | No | flag | -- | true | Straw removed from field (cereals only) |
-| `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; overrides `--straw-removed`) |
+| `--straw-removed` | No | flag | -- | true | Straw removed from field (cereals only; mutually exclusive with `--straw-incorporated`) |
+| `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
@@ -168,7 +168,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `notes` | string[] | Advisory notes (may be empty) |
 
 **Notes:**
-- For cereal crops with `has_straw_option`, passing `--straw-incorporated` sets `straw_removed=false`, reducing the K recommendation. Default is straw removed.
+- For cereal crops with `has_straw_option`, passing `--straw-incorporated` sets `straw_removed=false`, reducing the K recommendation. Default is straw removed. `--straw-removed` and `--straw-incorporated` are mutually exclusive; passing both is an error.
 - The `--mg-index` defaults to 2 (target index). At index 2 or above, MgO recommendation is 0.
 - P, K, and Mg indices above 4 are clamped to 4, which returns 0 kg/ha for all three nutrients.
 
@@ -292,8 +292,8 @@ rb209 potassium --crop CROP --k-index N [options]
 |----------|----------|------|--------------|---------|-------------|
 | `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
 | `--k-index` | Yes | int | `0` to `9` | -- | Soil potassium index (clamped to 4) |
-| `--straw-removed` | No | flag | -- | true | Straw removed (cereals only) |
-| `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; overrides `--straw-removed`) |
+| `--straw-removed` | No | flag | -- | true | Straw removed (cereals only; mutually exclusive with `--straw-incorporated`) |
+| `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (straw removed, default):**
@@ -320,7 +320,7 @@ $ rb209 potassium --crop winter-wheat-feed --k-index 0 --straw-incorporated
 
 **Notes:**
 - JSON schema is the same as [nitrogen](#nitrogen) (single nutrient format).
-- For cereals, straw management changes the K recommendation. When straw is removed, more K fertiliser is needed. The `--straw-incorporated` flag overrides the default `--straw-removed`.
+- For cereals, straw management changes the K recommendation. When straw is removed, more K fertiliser is needed. `--straw-removed` and `--straw-incorporated` are mutually exclusive flags; passing both is an error.
 - Non-cereal crops ignore the straw flags.
 - Indices above 4 are clamped to 4 (returns 0 kg/ha).
 
@@ -473,7 +473,6 @@ $ rb209 sns-ley --ley-age 3-5yr --n-intensity high --management 1-cut-then-graze
 | Soil Nitrogen Supply (SNS)   |
 +------------------------------+
 |   SNS Index               2  |
-|   Previous crop              |
 |   Soil type          medium  |
 |   Rainfall           medium  |
 |   Method          table-4.6  |
@@ -555,7 +554,7 @@ $ rb209 organic --material cattle-fym --rate 25
 +----------------------------------+
 | Organic Nutrients — Cattle FYM   |
 +----------------------------------+
-|   Application rate            25.0 |
+|   Application rate        25.0 t/ha |
 |   Total N              150.0 kg/ha |
 |   Available N (yr 1)    30.0 kg/ha |
 |   P2O5                  80.0 kg/ha |
@@ -573,7 +572,7 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
 | Organic Nutrients — Pig Slurry (4% |
 |  DM)                               |
 +------------------------------------+
-|   Application rate              30.0 |
+|   Application rate        30.0 m3/ha |
 |   Total N               108.0 kg/ha |
 |   Available N (yr 1)     64.8 kg/ha |
 |   P2O5                   60.0 kg/ha |
@@ -589,6 +588,7 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
 {
   "material": "Cattle FYM",
   "rate": 25.0,
+  "unit": "t",
   "total_n": 150.0,
   "available_n": 30.0,
   "p2o5": 80.0,
@@ -604,6 +604,7 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
 |-------|------|-------------|
 | `material` | string | Display name of the organic material |
 | `rate` | float | Application rate as provided |
+| `unit` | string | Rate unit: `"t"` (tonnes/ha for solids) or `"m3"` (cubic metres/ha for slurries) |
 | `total_n` | float | Total nitrogen (kg/ha) |
 | `available_n` | float | Crop-available nitrogen in year 1 (kg/ha) |
 | `p2o5` | float | Phosphorus as P2O5 (kg/ha) |

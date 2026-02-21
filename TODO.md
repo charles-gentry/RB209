@@ -18,20 +18,13 @@ falls back to the generic `NITROGEN_RECOMMENDATIONS` table instead of raising
 
 ---
 
-### 2. `format_sns` displays empty "Previous crop" row for Table 4.6 results
+### ~~2. `format_sns` displays empty "Previous crop" row for Table 4.6 results~~ ✓ Fixed
 
-**File:** `rb209/formatters.py:88-91`
+**Fixed in:** `rb209/formatters.py`, `CLI.md`
 
-When the SNS method is `"table-4.6"`, the formatter falls into the `else` branch
-and always appends the `previous_crop` field.  But `previous_crop` is an empty
-string for Table 4.6 results, producing a blank row:
-
-```
-|   Previous crop              |
-```
-
-The formatter should either omit the previous-crop row when it is empty, or display
-ley-specific fields (ley age, management, year) for Table 4.6 results.
+The formatter now only appends the `previous_crop` row when it is non-empty.
+Table 4.6 results (method `"table-4.6"`) no longer show a blank "Previous crop"
+row; the ley details are already captured in the notes section.
 
 ---
 
@@ -60,33 +53,26 @@ threshold) or remove them as dead code.
 
 ---
 
-### 5. `OrganicNutrients` dataclass lacks a unit field
+### ~~5. `OrganicNutrients` dataclass lacks a unit field~~ ✓ Fixed
 
-**File:** `rb209/models.py:132-141`, `rb209/formatters.py:104`
+**Fixed in:** `rb209/models.py`, `rb209/engine.py`, `rb209/formatters.py`, `CLI.md`
 
-`OrganicNutrients` stores `rate` but not the unit (tonnes/ha vs. m³/ha).
-The formatter outputs the application rate as a bare number:
-
-```
-|   Application rate          25.0 |
-```
-
-There is no way for the user to tell whether the rate is in t/ha or m³/ha.
-Adding a `unit` field (populated from `ORGANIC_MATERIAL_INFO[material]["unit"]`)
-would allow the formatter to display e.g. `25.0 t/ha` or `30.0 m³/ha`.
+Added a `unit` field to `OrganicNutrients` (populated from
+`ORGANIC_MATERIAL_INFO[material]["unit"]`). The formatter now displays the
+application rate with its unit, e.g. `25.0 t/ha` or `30.0 m³/ha`. The JSON
+output also includes the `unit` field.
 
 ---
 
-### 6. `--straw-removed` / `--straw-incorporated` flags should be mutually exclusive
+### ~~6. `--straw-removed` / `--straw-incorporated` flags should be mutually exclusive~~ ✓ Fixed
 
-**Files:** `rb209/cli.py:201-204, 237-240`
+**Fixed in:** `rb209/cli.py`, `CLI.md`
 
-Both the `recommend` and `potassium` parsers define `--straw-removed`
-(`default=True, action="store_true"`) and `--straw-incorporated`
-(`action="store_true"`) as independent flags. Passing both simultaneously is
-silently accepted, with `--straw-incorporated` winning via the override in
-`main()`. Using `parser.add_mutually_exclusive_group()` would prevent
-confusing combinations and make the default behaviour explicit.
+Both the `recommend` and `potassium` parsers now use
+`parser.add_mutually_exclusive_group()` with `--straw-incorporated` mapped to
+`dest="straw_removed"` via `action="store_false"`. Passing both flags
+simultaneously now produces an argparse error (exit code 2). The manual override
+in `main()` has been removed.
 
 ---
 

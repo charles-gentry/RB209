@@ -555,6 +555,7 @@ def calculate_organic(
     return OrganicNutrients(
         material=info["name"],
         rate=rate,
+        unit=info["unit"],
         total_n=total_n,
         available_n=available_n,
         p2o5=round(info["p2o5"] * rate, 1),
