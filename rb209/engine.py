@@ -352,10 +352,7 @@ def recommend_nitrogen(
         soil_key = (crop, sns_index, soil_type)
         if soil_key in NITROGEN_SOIL_SPECIFIC:
             return NITROGEN_SOIL_SPECIFIC[soil_key]
-        raise ValueError(
-            f"No soil-specific nitrogen data for crop '{crop}' "
-            f"at SNS {sns_index} on {soil_type} soil"
-        )
+        # No soil-specific table for this crop; fall back to generic table.
 
     key = (crop, sns_index)
     if key not in NITROGEN_RECOMMENDATIONS:

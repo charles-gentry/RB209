@@ -8,23 +8,13 @@ Open items identified from a full code review.
 
 ## Open Issues
 
-### 1. `recommend_nitrogen` raises instead of falling back to generic table when `soil_type` is provided
+### ~~1. `recommend_nitrogen` raises instead of falling back to generic table when `soil_type` is provided~~ ✓ Fixed
 
-**Files:** `rb209/engine.py:344-358`
+**Fixed in:** `rb209/engine.py`, `tests/test_engine.py`, `CLI.md`
 
-When `soil_type` is passed to `recommend_nitrogen()` for a crop that only has generic
-N data (anything other than `winter-wheat-feed`), the function raises `ValueError`
-instead of falling back to the generic recommendation table. This also breaks the
-`recommend` and `nitrogen` CLI subcommands:
-
-```
-$ rb209 recommend --crop spring-barley --sns-index 1 --p-index 1 --k-index 1 --soil-type medium
-Error: No soil-specific nitrogen data for crop 'spring-barley' at SNS 1 on medium soil
-```
-
-The `--soil-type` flag is optional, and the user may reasonably pass it when their
-crop has no soil-specific N table. When soil-specific N data is absent, the engine
-should fall back to `NITROGEN_RECOMMENDATIONS` rather than erroring.
+When `soil_type` is passed for a crop with no soil-specific N table, the engine now
+falls back to the generic `NITROGEN_RECOMMENDATIONS` table instead of raising
+`ValueError`. The CLI flag `--soil-type` works correctly for all crops.
 
 ---
 
