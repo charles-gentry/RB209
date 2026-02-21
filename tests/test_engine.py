@@ -69,15 +69,13 @@ class TestNitrogen(unittest.TestCase):
         with self.assertRaises(ValueError):
             recommend_nitrogen("winter-wheat-feed", 2, soil_type="volcanic")
 
-    def test_soil_specific_no_data_raises(self):
-        # Organic soil at SNS 0 has no data (dash in Table 4.17)
-        with self.assertRaises(ValueError):
-            recommend_nitrogen("winter-wheat-feed", 0, soil_type="organic")
+    def test_soil_specific_no_data_falls_back_to_generic(self):
+        # Organic soil at SNS 0 has no data (dash in Table 4.17); falls back to generic
+        self.assertEqual(recommend_nitrogen("winter-wheat-feed", 0, soil_type="organic"), 220)
 
-    def test_soil_specific_crop_without_table_raises(self):
-        # Spring barley has no soil-specific table
-        with self.assertRaises(ValueError):
-            recommend_nitrogen("spring-barley", 2, soil_type="medium")
+    def test_soil_specific_crop_without_table_falls_back_to_generic(self):
+        # Spring barley has no soil-specific table; falls back to generic recommendation
+        self.assertEqual(recommend_nitrogen("spring-barley", 2, soil_type="medium"), 100)
 
     def test_bool_true_sns_raises(self):
         # bool is a subclass of int; True == 1 but must be rejected
