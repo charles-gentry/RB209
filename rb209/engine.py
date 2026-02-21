@@ -39,9 +39,9 @@ def _validate_crop(crop: str) -> None:
 
 
 def _validate_index(name: str, value: int, min_val: int = 0, max_val: int = 6) -> None:
-    if not isinstance(value, int) or value < min_val or value > max_val:
+    if isinstance(value, bool) or not isinstance(value, int) or value < min_val or value > max_val:
         raise ValueError(
-            f"{name} must be an integer between {min_val} and {max_val}, got {value}"
+            f"{name} must be an integer between {min_val} and {max_val}, got {value!r}"
         )
 
 

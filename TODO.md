@@ -2,7 +2,7 @@
 
 Items identified from the test suite and a full code review.
 
-**Test summary:** 0 failed, 118 passed, 0 skipped (118 total).
+**Test summary:** 0 failed, 123 passed, 0 skipped (123 total).
 
 ---
 
@@ -223,12 +223,19 @@ This references a private/internal setuptools module path.  The standard entry
 point is `"setuptools.build_meta"`.  The private path may break with future
 setuptools releases.
 
-### 17. `_validate_index` accepts `bool` values due to Python `bool` subclassing `int`
+~~### 17. `_validate_index` accepts `bool` values due to Python `bool` subclassing `int`~~
 
-**File:** `rb209/engine.py:42`
+**Fixed.**  `_validate_index` now leads with `isinstance(value, bool)` before the
+`isinstance(value, int)` check (since `bool` is a subclass of `int`, the order matters).
+Passing `True` or `False` to any index parameter — SNS, P, K, or Mg — now raises
+`ValueError` immediately.  The error message also uses `{value!r}` so that
+`True` and `False` display as their boolean names rather than `1` and `0`.
 
-`_validate_index` checks `not isinstance(value, int)`, but Python `bool` is a
-subclass of `int` (`isinstance(True, int)` is `True`).  This means
-`recommend_nitrogen("winter-wheat-feed", True)` silently succeeds and returns
-the SNS index 1 recommendation (180 kg/ha) rather than rejecting the input.
-Adding `isinstance(value, bool)` as an early rejection would prevent this.
+Five new tests in `tests/test_engine.py` cover this:
+- `TestNitrogen.test_bool_true_sns_raises`
+- `TestNitrogen.test_bool_false_sns_raises`
+- `TestValidateIndex.test_phosphorus_bool_raises`
+- `TestValidateIndex.test_potassium_bool_raises`
+- `TestValidateIndex.test_magnesium_bool_raises`
+
+**Test summary:** 0 failed, 123 passed, 0 skipped (123 total).
