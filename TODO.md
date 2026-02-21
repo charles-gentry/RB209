@@ -1,142 +1,40 @@
 # TODO
 
-Items identified from the test suite and a full code review.
+Open items identified from a full code review.
 
-**Test summary:** 0 failed, 123 passed, 0 skipped (123 total).
-
----
-
-## Bugs / Failures
-
-~~### 1. Fix wrong `cwd` path in CLI integration tests (16 tests failing)~~
-
-**Fixed** in `tests/test_cli.py`. The `_run_cli` helper hard-coded
-`cwd="/home/user/Rb209"` (wrong casing), causing all 16 CLI integration tests to
-fail with `FileNotFoundError`. Replaced with
-`_REPO_ROOT = pathlib.Path(__file__).parents[1]` so the path is derived from the
-test file's location and is machine/casing agnostic.
+**Test summary:** 0 failed, 149 passed, 0 skipped (149 total).
 
 ---
 
-## Unimplemented Features (Skipped Tests)
+## Open Issues
 
-~~### 2. Timing and incorporation adjustment factors for organic materials~~
+### 1. `recommend_nitrogen` raises instead of falling back to generic table when `soil_type` is provided
 
-**Fixed.**  `calculate_organic()` now accepts optional `timing`, `incorporated`,
-and `soil_type` parameters.  When `timing` is supplied, available-N is derived from
-the RB209 Table 2.12 percentage factors instead of the flat default coefficient.
-A lookup table (`ORGANIC_N_TIMING_FACTORS`) keyed on material, timing season,
-soil category, and incorporation flag is stored in `rb209/data/organic.py`.
-Test `test_example_4_2_pig_slurry_adjusted_available_n` has been implemented and
-now passes: spring + incorporated-6h gives 64.8 kg N/ha (60 % of total N) vs.
-37.8 kg N/ha for winter surface-applied (35 % of total N).
-
-~~### 3. Table 4.6 — Grass ley SNS by age, N-intensity and management regime~~
-
-**Fixed.**  A new `calculate_grass_ley_sns()` engine function looks up SNS indices
-from RB209 Table 4.6 (SNS Indices following ploughing out of grass leys).  It accepts
-`ley_age` (`"1-2yr"` / `"3-5yr"`), `n_intensity` (`"low"` / `"high"`), `management`
-(`"cut"` / `"grazed"` / `"1-cut-then-grazed"`), `soil_type`, `rainfall`, and `year`
-(1–3 years after ploughing).  The full Table 4.6 dataset — four soil categories × three
-management rows × three years — is stored in `GRASS_LEY_SNS_LOOKUP` in
-`rb209/data/sns.py`.  The function returns an `SNSResult` with `method="table-4.6"`.
-
-Tests now passing:
-- `test_example_4_4_table_4_6_grass_ley_sns`: 3–5yr ley, high N, 1-cut-then-grazed,
-  medium soil, moderate rainfall → Year 1 = SNS 2 (Example 4.4)
-- `test_example_4_5_table_4_6_grass_ley_sns`: 1–2yr ley, high N, grazed, heavy soil,
-  high rainfall → Year 2 = SNS 2 (Example 4.5 — winter wheat is 2nd crop after the ley)
-
-~~### 4. Intermediate grass ley duration category (3-year ley)~~
-
-**Fixed.**  A new `GRASS_3_5_YEAR = "grass-3-5yr"` member has been added to the
-`PreviousCrop` enum in `rb209/models.py`.  It is mapped to `NResidueCategory.HIGH`
-in `PREVIOUS_CROP_N_CATEGORY` — the same category as 1–2 year grass, since RB209
-reserves VERY HIGH for long-term grass (5+ years).  This allows `calculate_sns()`
-to accept `"grass-3-5yr"` as a previous crop for the field assessment method
-(Tables 4.3–4.5), and it is also available as a `--previous-crop` choice in the
-`sns` CLI subcommand.  Test `test_example_4_4_three_year_ley_category` now passes.
-
-~~### 5. Subsequent-crop SNS reduction after grass ley~~
-
-**Fixed.**  The `calculate_grass_ley_sns()` function already supports a `year`
-parameter (1, 2, or 3) that returns the correct SNS index for each year after
-ploughing out a grass ley.  For Example 4.4 (3–5yr ley, high N,
-1-cut-then-grazed, medium soil, medium rainfall) the lookup yields SNS 2, 2, 1
-for years 1–3 respectively.  Test `test_example_4_4_subsequent_crop_sns` now
-passes, verifying the year 2 (SNS 2) and year 3 (SNS 1) values.
-
-~~### 6. "Take the higher of two SNS values" logic~~
-
-**Fixed.**  A new `combine_sns()` engine function accepts two or more `SNSResult`
-objects and returns the one with the highest `sns_index`.  When both
-field-assessment (Table 4.3/4.4/4.5) and grass-ley (Table 4.6) methods apply,
-callers use `combine_sns(field_result, ley_result)` to select the higher SNS
-index, as required by RB209.  Test `test_example_4_5_combined_sns_take_higher`
-now passes: `max(SNS 1, SNS 2) = SNS 2` for Example 4.5.
-
-~~### 7. Crop history / second-previous-crop support in `calculate_sns`~~
-
-**Fixed.**  `calculate_sns()` now accepts an optional keyword argument
-`grass_history` — a dict with keys `ley_age`, `n_intensity`, `management`,
-and optionally `year` (defaults to 2).  When provided, the function performs
-both the normal field-assessment SNS lookup and a Table 4.6 grass ley lookup,
-then returns the higher of the two indices with `method="combined"` and notes
-describing both assessments.  This covers the common rotation scenario where
-the current crop's previous crop was an arable crop that itself followed a
-grass ley (e.g. winter wheat → spring barley → grass ley).
-
-The `sns` CLI subcommand has been extended with optional `--ley-age`,
-`--ley-n-intensity`, `--ley-management`, and `--ley-year` flags.  When
-`--ley-age` is provided, all three ley flags are required and the combined
-assessment is performed automatically.
-
-Test `test_example_4_5_crop_history` now passes: cereals + heavy soil + high
-rainfall gives field-assessment SNS 1; a 1–2yr high-N grazed ley at year 2
-gives Table 4.6 SNS 2; combined result = SNS 2.
-
----
-
-## Code Review Findings
-
-Issues identified from a full code review (not covered by the test-suite items above).
-
-### 8. `recommend_nitrogen` raises instead of falling back to generic table when `soil_type` is provided
-
-**Files:** `rb209/engine.py:285-299`
+**Files:** `rb209/engine.py:344-358`
 
 When `soil_type` is passed to `recommend_nitrogen()` for a crop that only has generic
 N data (anything other than `winter-wheat-feed`), the function raises `ValueError`
-instead of falling back to the generic recommendation table.  This also breaks the
-`recommend` CLI subcommand:
+instead of falling back to the generic recommendation table. This also breaks the
+`recommend` and `nitrogen` CLI subcommands:
 
 ```
 $ rb209 recommend --crop spring-barley --sns-index 1 --p-index 1 --k-index 1 --soil-type medium
 Error: No soil-specific nitrogen data for crop 'spring-barley' at SNS 1 on medium soil
 ```
 
-The `--soil-type` flag is documented as optional, and the user may reasonably pass it
-for other purposes (e.g. to note their soil type for reporting).  When soil-specific N
-data is absent, the engine should fall back to `NITROGEN_RECOMMENDATIONS` rather than
-erroring.
+The `--soil-type` flag is optional, and the user may reasonably pass it when their
+crop has no soil-specific N table. When soil-specific N data is absent, the engine
+should fall back to `NITROGEN_RECOMMENDATIONS` rather than erroring.
 
-~~### 9. No CLI subcommand for `calculate_grass_ley_sns` (Table 4.6)~~
+---
 
-**Fixed.**  A new `sns-ley` CLI subcommand has been added to `rb209/cli.py`.  It
-accepts `--ley-age` (`1-2yr` / `3-5yr`), `--n-intensity` (`low` / `high`),
-`--management` (`cut` / `grazed` / `1-cut-then-grazed`), `--soil-type`
-(`light` / `medium` / `heavy`), `--rainfall` (`low` / `medium` / `high`), and
-`--year` (`1` / `2` / `3`, default 1).  Organic soils are excluded at the
-argument-parsing level since Table 4.6 does not cover them.  Output supports
-both `--format table` (default) and `--format json`.
+### 2. `format_sns` displays empty "Previous crop" row for Table 4.6 results
 
-### 10. `format_sns` displays empty "Previous crop" row for Table 4.6 results
-
-**File:** `rb209/formatters.py:81-94`
+**File:** `rb209/formatters.py:88-91`
 
 When the SNS method is `"table-4.6"`, the formatter falls into the `else` branch
-and displays `previous_crop`, `soil_type`, and `rainfall`.  But `previous_crop`
-is an empty string for Table 4.6 results, producing a blank row:
+and always appends the `previous_crop` field.  But `previous_crop` is an empty
+string for Table 4.6 results, producing a blank row:
 
 ```
 |   Previous crop              |
@@ -145,49 +43,36 @@ is an empty string for Table 4.6 results, producing a blank row:
 The formatter should either omit the previous-crop row when it is empty, or display
 ley-specific fields (ley age, management, year) for Table 4.6 results.
 
-~~### 11. Timing/incorporation factors only implemented for pig slurry~~
+---
 
-**Fixed.**  `ORGANIC_N_TIMING_FACTORS` now contains entries for all major
-livestock manures and biosolids covered by RB209 Section 2:
-
-| Material(s) | RB209 Table | DM basis |
-|---|---|---|
-| `cattle-fym`, `pig-fym`, `sheep-fym`, `horse-fym` | Table 2.3 | all FYM (fresh values) |
-| `poultry-litter` | Table 2.6 | 40 % DM |
-| `layer-manure` | Table 2.6 | 20 % DM |
-| `cattle-slurry` | Table 2.9 | 6 % DM |
-| `pig-slurry` | Table 2.12 | 4 % DM (unchanged) |
-| `biosolids-cake` | Table 2.15 | digested cake, 25 % DM |
-
-Composts (`green-compost`, `green-food-compost`) and `paper-crumble` have
-no timing table in RB209 and remain flat-coefficient only.  Passing `timing=`
-for these materials still raises `ValueError`.  The docstring in `engine.py`
-and the notes in CLI.md and README.md have been updated accordingly.
-
-### 12. `Crop` and `CropCategory` enums are defined but never used
+### 3. `Crop` and `CropCategory` enums are defined but never used
 
 **File:** `rb209/models.py:15-52`
 
 The `Crop` enum (22 members) and `CropCategory` enum are defined and `Crop` is
-imported in `cli.py`, but neither is referenced anywhere in the codebase.  The
+imported in `cli.py`, but neither is referenced anywhere in the codebase. The
 engine, CLI, and data modules all use plain string values for crop identification.
 These enums are dead code — either integrate them into the type signatures
 (replacing bare `str` crop parameters) or remove them.
 
-### 13. `TARGET_PH` and `MIN_PH_FOR_LIMING` constants are unused
+---
+
+### 4. `TARGET_PH` and `MIN_PH_FOR_LIMING` constants are unused
 
 **File:** `rb209/data/lime.py:17-23`
 
 `TARGET_PH` (arable: 6.5, grassland: 6.0) and `MIN_PH_FOR_LIMING = 5.0` are
-defined but never imported or referenced anywhere.  `calculate_lime` takes
+defined but never imported or referenced anywhere. `calculate_lime` takes
 `target_ph` as an explicit argument and performs no land-use-based defaulting
-or minimum-pH gating.  Either wire these constants into the engine (e.g.
+or minimum-pH gating. Either wire these constants into the engine (e.g.
 auto-suggest target pH by crop category, warn when pH is below the liming
 threshold) or remove them as dead code.
 
-### 14. `OrganicNutrients` dataclass lacks a unit field
+---
 
-**File:** `rb209/models.py:130-139`, `rb209/formatters.py:104`
+### 5. `OrganicNutrients` dataclass lacks a unit field
+
+**File:** `rb209/models.py:132-141`, `rb209/formatters.py:104`
 
 `OrganicNutrients` stores `rate` but not the unit (tonnes/ha vs. m³/ha).
 The formatter outputs the application rate as a bare number:
@@ -200,18 +85,22 @@ There is no way for the user to tell whether the rate is in t/ha or m³/ha.
 Adding a `unit` field (populated from `ORGANIC_MATERIAL_INFO[material]["unit"]`)
 would allow the formatter to display e.g. `25.0 t/ha` or `30.0 m³/ha`.
 
-### 15. `--straw-removed` / `--straw-incorporated` flags should be mutually exclusive
+---
 
-**Files:** `rb209/cli.py:169-172, 206-209, 322-324`
+### 6. `--straw-removed` / `--straw-incorporated` flags should be mutually exclusive
+
+**Files:** `rb209/cli.py:201-204, 237-240`
 
 Both the `recommend` and `potassium` parsers define `--straw-removed`
 (`default=True, action="store_true"`) and `--straw-incorporated`
-(`action="store_true"`) as independent flags.  Passing both simultaneously is
+(`action="store_true"`) as independent flags. Passing both simultaneously is
 silently accepted, with `--straw-incorporated` winning via the override in
-`main()`.  Using `parser.add_mutually_exclusive_group()` would prevent
+`main()`. Using `parser.add_mutually_exclusive_group()` would prevent
 confusing combinations and make the default behaviour explicit.
 
-### 16. `pyproject.toml` uses private setuptools build backend
+---
+
+### 7. `pyproject.toml` uses private setuptools build backend
 
 **File:** `pyproject.toml:13`
 
@@ -219,23 +108,6 @@ confusing combinations and make the default behaviour explicit.
 build-backend = "setuptools.backends._legacy:_Backend"
 ```
 
-This references a private/internal setuptools module path.  The standard entry
-point is `"setuptools.build_meta"`.  The private path may break with future
+This references a private/internal setuptools module path. The standard entry
+point is `"setuptools.build_meta"`. The private path may break with future
 setuptools releases.
-
-~~### 17. `_validate_index` accepts `bool` values due to Python `bool` subclassing `int`~~
-
-**Fixed.**  `_validate_index` now leads with `isinstance(value, bool)` before the
-`isinstance(value, int)` check (since `bool` is a subclass of `int`, the order matters).
-Passing `True` or `False` to any index parameter — SNS, P, K, or Mg — now raises
-`ValueError` immediately.  The error message also uses `{value!r}` so that
-`True` and `False` display as their boolean names rather than `1` and `0`.
-
-Five new tests in `tests/test_engine.py` cover this:
-- `TestNitrogen.test_bool_true_sns_raises`
-- `TestNitrogen.test_bool_false_sns_raises`
-- `TestValidateIndex.test_phosphorus_bool_raises`
-- `TestValidateIndex.test_potassium_bool_raises`
-- `TestValidateIndex.test_magnesium_bool_raises`
-
-**Test summary:** 0 failed, 123 passed, 0 skipped (123 total).
