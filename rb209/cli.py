@@ -142,7 +142,15 @@ def _handle_organic(args: argparse.Namespace) -> None:
 
 
 def _handle_lime(args: argparse.Namespace) -> None:
-    result = calculate_lime(args.current_ph, args.target_ph, args.soil_type)
+    target_ph = getattr(args, "target_ph", None)
+    land_use = getattr(args, "land_use", None)
+    if target_ph is None and land_use is None:
+        print(
+            "Error: one of --target-ph or --land-use is required.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    result = calculate_lime(args.current_ph, target_ph, args.soil_type, land_use=land_use)
     print(format_lime(result, args.output_format))
 
 
@@ -369,8 +377,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_lime = subparsers.add_parser("lime", help="Calculate lime requirement")
     p_lime.add_argument("--current-ph", required=True, type=float,
                          help="Current soil pH")
-    p_lime.add_argument("--target-ph", required=True, type=float,
-                         help="Target soil pH")
+    p_lime.add_argument("--target-ph", type=float, default=None,
+                         help=(
+                             "Target soil pH. When omitted, the RB209 default "
+                             "for the specified --land-use is used automatically "
+                             "(arable: 6.5, grassland: 6.0)."
+                         ))
+    p_lime.add_argument("--land-use",
+                         choices=["arable", "grassland"],
+                         default=None,
+                         help=(
+                             "Land use category for automatic target pH selection. "
+                             "Required when --target-ph is omitted. "
+                             "arable → target pH 6.5; grassland → target pH 6.0."
+                         ))
     p_lime.add_argument("--soil-type", required=True,
                          choices=[s.value for s in SoilType],
                          help="Soil type")

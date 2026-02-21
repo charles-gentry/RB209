@@ -103,6 +103,62 @@ class TestCLILime(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("3.9", result.stdout)
 
+    def test_land_use_arable_auto_target(self):
+        # --land-use arable should default target pH to 6.5
+        result = _run_cli(
+            "lime",
+            "--current-ph", "5.8",
+            "--land-use", "arable",
+            "--soil-type", "medium",
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("6.5", result.stdout)
+        self.assertIn("3.9", result.stdout)
+
+    def test_land_use_grassland_auto_target(self):
+        # --land-use grassland should default target pH to 6.0
+        result = _run_cli(
+            "lime",
+            "--current-ph", "5.5",
+            "--land-use", "grassland",
+            "--soil-type", "medium",
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("6.0", result.stdout)
+
+    def test_no_target_ph_no_land_use_errors(self):
+        result = _run_cli(
+            "lime",
+            "--current-ph", "5.8",
+            "--soil-type", "medium",
+        )
+        self.assertEqual(result.returncode, 2)
+
+    def test_very_acidic_soil_warning(self):
+        # pH below 5.0 should produce a warning note
+        result = _run_cli(
+            "lime",
+            "--current-ph", "4.5",
+            "--target-ph", "6.5",
+            "--soil-type", "medium",
+        )
+        self.assertEqual(result.returncode, 0)
+        # "very acidic" appears on a single line within the box
+        self.assertIn("very acidic", result.stdout.lower())
+
+    def test_land_use_json_target_ph_field(self):
+        import json
+        result = _run_cli(
+            "lime",
+            "--current-ph", "5.0",
+            "--land-use", "arable",
+            "--soil-type", "light",
+            "--format", "json",
+        )
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertAlmostEqual(data["target_ph"], 6.5)
+
 
 class TestCLIListCrops(unittest.TestCase):
     def test_list_all_crops(self):

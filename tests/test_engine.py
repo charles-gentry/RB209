@@ -3,6 +3,7 @@
 import unittest
 
 from rb209.engine import (
+    calculate_lime,
     recommend_all,
     recommend_magnesium,
     recommend_nitrogen,
@@ -180,6 +181,82 @@ class TestRecommendAll(unittest.TestCase):
     def test_straw_note_present(self):
         rec = recommend_all("winter-wheat-feed", 0, 0, 0)
         self.assertTrue(any("straw" in n.lower() for n in rec.notes))
+
+
+class TestCalculateLime(unittest.TestCase):
+    # ── explicit target_ph (existing behaviour) ──────────────────────
+    def test_explicit_target_ph(self):
+        result = calculate_lime(5.8, 6.5, "medium")
+        self.assertAlmostEqual(result.lime_required, 3.9)
+        self.assertEqual(result.target_ph, 6.5)
+
+    def test_no_lime_needed(self):
+        result = calculate_lime(7.0, 6.5, "medium")
+        self.assertEqual(result.lime_required, 0.0)
+        self.assertTrue(any("No lime" in n for n in result.notes))
+
+    def test_split_dressing_note(self):
+        result = calculate_lime(4.5, 7.5, "heavy")
+        self.assertAlmostEqual(result.lime_required, 22.5)
+        self.assertTrue(any("split" in n.lower() for n in result.notes))
+
+    # ── land_use auto-defaults (new behaviour) ────────────────────────
+    def test_land_use_arable_defaults_to_6_5(self):
+        # No target_ph — should derive 6.5 for arable
+        result = calculate_lime(5.8, None, "medium", land_use="arable")
+        self.assertAlmostEqual(result.target_ph, 6.5)
+        self.assertAlmostEqual(result.lime_required, 3.9)
+
+    def test_land_use_grassland_defaults_to_6_0(self):
+        result = calculate_lime(5.5, None, "medium", land_use="grassland")
+        self.assertAlmostEqual(result.target_ph, 6.0)
+        # (6.0 - 5.5) * 5.5 = 2.75, rounded to 1dp via Python = 2.8
+        self.assertAlmostEqual(result.lime_required, 2.8)
+
+    def test_explicit_target_ph_overrides_land_use(self):
+        # target_ph=5.5 supplied alongside land_use; explicit value wins
+        result = calculate_lime(5.0, 5.5, "light", land_use="arable")
+        self.assertAlmostEqual(result.target_ph, 5.5)
+        self.assertAlmostEqual(result.lime_required, 2.0)
+
+    def test_neither_target_ph_nor_land_use_raises(self):
+        with self.assertRaises(ValueError, msg="Should raise when both are None"):
+            calculate_lime(5.8, None, "medium")
+
+    def test_invalid_land_use_raises(self):
+        with self.assertRaises(ValueError):
+            calculate_lime(5.8, None, "medium", land_use="orchard")
+
+    # ── MIN_PH_FOR_LIMING warning ─────────────────────────────────────
+    def test_very_acidic_ph_adds_warning_note(self):
+        # pH 4.5 is below MIN_PH_FOR_LIMING (5.0)
+        result = calculate_lime(4.5, 6.5, "medium")
+        self.assertTrue(
+            any("very acidic" in n.lower() or "strongly recommended" in n.lower()
+                for n in result.notes)
+        )
+
+    def test_ph_at_threshold_no_warning(self):
+        # pH exactly at 5.0 should NOT trigger the warning
+        result = calculate_lime(5.0, 6.5, "medium")
+        self.assertFalse(
+            any("very acidic" in n.lower() for n in result.notes)
+        )
+
+    def test_ph_above_threshold_no_warning(self):
+        result = calculate_lime(5.5, 6.5, "medium")
+        self.assertFalse(
+            any("very acidic" in n.lower() for n in result.notes)
+        )
+
+    def test_very_acidic_with_land_use_auto_default(self):
+        # Combined: land_use auto-default + very-acidic warning
+        result = calculate_lime(4.2, None, "light", land_use="arable")
+        self.assertAlmostEqual(result.target_ph, 6.5)
+        self.assertTrue(
+            any("very acidic" in n.lower() or "strongly recommended" in n.lower()
+                for n in result.notes)
+        )
 
 
 if __name__ == "__main__":
