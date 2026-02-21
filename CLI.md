@@ -116,6 +116,7 @@ rb209 recommend --crop CROP --sns-index N --p-index N --k-index N [options]
 | `--mg-index` | No | int | `0` to `9` | `2` | Soil magnesium index (clamped to 4) |
 | `--straw-removed` | No | flag | -- | true | Straw removed from field (cereals only) |
 | `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; overrides `--straw-removed`) |
+| `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation (currently only `winter-wheat-feed` has soil-specific data; omit for all other crops) |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
@@ -189,6 +190,7 @@ rb209 nitrogen --crop CROP --sns-index N [--format FORMAT]
 |----------|----------|------|--------------|---------|-------------|
 | `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
 | `--sns-index` | Yes | int | `0` to `6` | -- | Soil Nitrogen Supply index |
+| `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation (currently only `winter-wheat-feed` has soil-specific data; omit for all other crops) |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
