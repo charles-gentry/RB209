@@ -40,16 +40,17 @@ These enums are dead code — either integrate them into the type signatures
 
 ---
 
-### 4. `TARGET_PH` and `MIN_PH_FOR_LIMING` constants are unused
+### ~~4. `TARGET_PH` and `MIN_PH_FOR_LIMING` constants are unused~~ ✓ Fixed
 
-**File:** `rb209/data/lime.py:17-23`
+**Fixed in:** `rb209/engine.py`, `rb209/cli.py`, `tests/test_engine.py`, `tests/test_cli.py`, `CLI.md`
 
-`TARGET_PH` (arable: 6.5, grassland: 6.0) and `MIN_PH_FOR_LIMING = 5.0` are
-defined but never imported or referenced anywhere. `calculate_lime` takes
-`target_ph` as an explicit argument and performs no land-use-based defaulting
-or minimum-pH gating. Either wire these constants into the engine (e.g.
-auto-suggest target pH by crop category, warn when pH is below the liming
-threshold) or remove them as dead code.
+`TARGET_PH` and `MIN_PH_FOR_LIMING` are now imported and used in
+`calculate_lime`. The `target_ph` argument is now optional (defaults to
+`None`); when `land_use` is supplied instead, the RB209 default target pH is
+applied automatically (arable: 6.5, grassland: 6.0). A warning note is
+appended to the result whenever `current_ph < MIN_PH_FOR_LIMING` (5.0). The
+CLI `lime` subcommand gains a new optional `--land-use` flag and `--target-ph`
+is no longer required.
 
 ---
 

@@ -638,19 +638,24 @@ Calculate lime requirement to raise soil pH.
 **Usage:**
 
 ```
-rb209 lime --current-ph PH --target-ph PH --soil-type TYPE [--format FORMAT]
+rb209 lime --current-ph PH (--target-ph PH | --land-use arable|grassland) --soil-type TYPE [--format FORMAT]
 ```
+
+Either `--target-ph` or `--land-use` must be supplied.  When `--land-use` is given without `--target-ph`, the RB209 default target pH for that land use is used automatically (arable: 6.5, grassland: 6.0).
 
 **Arguments:**
 
 | Argument | Required | Type | Valid Values | Default | Description |
 |----------|----------|------|--------------|---------|-------------|
 | `--current-ph` | Yes | float | `3.0` to `9.0` | -- | Current soil pH |
-| `--target-ph` | Yes | float | `4.0` to `8.5` | -- | Target soil pH |
+| `--target-ph` | No* | float | `4.0` to `8.5` | -- | Target soil pH. Required when `--land-use` is omitted. |
+| `--land-use` | No* | string | `arable`, `grassland` | -- | Land use for automatic target pH selection (arable → 6.5, grassland → 6.0). Required when `--target-ph` is omitted. |
 | `--soil-type` | Yes | string | `light`, `medium`, `heavy`, `organic` | -- | Soil texture category |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
-**Example (table):**
+\* One of `--target-ph` or `--land-use` must be provided.
+
+**Example (explicit target pH):**
 
 ```
 $ rb209 lime --current-ph 5.8 --target-ph 6.5 --soil-type medium
@@ -662,6 +667,56 @@ $ rb209 lime --current-ph 5.8 --target-ph 6.5 --soil-type medium
 |   Soil type               medium |
 |   Lime required   3.9 t CaCO3/ha |
 +--------------------------------+
+```
+
+**Example (auto target pH via land use -- arable):**
+
+```
+$ rb209 lime --current-ph 5.8 --land-use arable --soil-type medium
++--------------------------------+
+| Lime Requirement               |
++--------------------------------+
+|   Current pH                 5.8 |
+|   Target pH                  6.5 |
+|   Soil type               medium |
+|   Lime required   3.9 t CaCO3/ha |
++--------------------------------+
+```
+
+**Example (auto target pH via land use -- grassland):**
+
+```
+$ rb209 lime --current-ph 5.5 --land-use grassland --soil-type medium
++--------------------------------+
+| Lime Requirement               |
++--------------------------------+
+|   Current pH                 5.5 |
+|   Target pH                  6.0 |
+|   Soil type               medium |
+|   Lime required   2.8 t CaCO3/ha |
++--------------------------------+
+```
+
+**Example (very acidic soil -- pH below 5.0):**
+
+```
+$ rb209 lime --current-ph 4.5 --land-use arable --soil-type medium
++----------------------------------+
+| Lime Requirement                 |
++----------------------------------+
+|   Current pH                 4.5 |
+|   Target pH                  6.5 |
+|   Soil type               medium |
+|   Lime required   11.0 t CaCO3/ha |
++----------------------------------+
+| Soil pH (4.5) is below 5.0. Soil |
+|  is very acidic — liming is stro |
+| ngly recommended.                |
+| Total lime required (11.0 t/ha)  |
+|  exceeds single application maxi |
+| mum (7.5 t/ha). Apply in split d |
+| ressings over successive years.  |
++----------------------------------+
 ```
 
 **Example (JSON):**
@@ -688,6 +743,9 @@ $ rb209 lime --current-ph 4.5 --target-ph 7.5 --soil-type heavy
 |   Soil type                 heavy |
 |   Lime required   22.5 t CaCO3/ha |
 +---------------------------------+
+| Soil pH (4.5) is below 5.0. Soil |
+|  is very acidic — liming is stro |
+| ngly recommended.                |
 | Total lime required (22.5 t/ha) |
 |  exceeds single application max |
 | imum (7.5 t/ha). Apply in split |
@@ -701,15 +759,16 @@ $ rb209 lime --current-ph 4.5 --target-ph 7.5 --soil-type heavy
 | Field | Type | Description |
 |-------|------|-------------|
 | `current_ph` | float | Current soil pH as provided |
-| `target_ph` | float | Target soil pH as provided |
+| `target_ph` | float | Target soil pH (explicit or derived from `land_use`) |
 | `soil_type` | string | Soil type as provided |
 | `lime_required` | float | Lime requirement (t CaCO3/ha) |
-| `notes` | string[] | Advisory notes (e.g. split dressing advice) |
+| `notes` | string[] | Advisory notes (e.g. very acidic soil warning, split dressing advice) |
 
 **Notes:**
 - If `current_ph >= target_ph`, lime required is 0 and a note explains no lime is needed.
 - Lime requirement = (target_ph - current_ph) * soil_factor. Soil factors: light=4.0, medium=5.5, heavy=7.5, organic=11.0 t CaCO3/ha per pH unit.
 - If lime required exceeds 7.5 t/ha, the tool advises splitting applications over successive years.
+- When current pH is below **5.0**, a warning note is added: soil is very acidic and liming is strongly recommended.
 
 ---
 
@@ -1011,6 +1070,15 @@ lime (t CaCO3/ha) = (target_pH - current_pH) * soil_factor
 ```
 
 Soil factors (tonnes CaCO3/ha per pH unit): light = 4.0, medium = 5.5, heavy = 7.5, organic = 11.0. Heavier and organic soils have greater buffering capacity and need more lime to change pH.
+
+**Target pH defaults:** RB209 specifies standard target pH values by land use. Instead of looking these up manually, you can pass `--land-use` to the `lime` command and the correct target pH is applied automatically:
+
+| Land use | RB209 target pH |
+|----------|----------------|
+| `arable` | 6.5 |
+| `grassland` | 6.0 |
+
+**Very acidic soils:** When the current pH is below 5.0, the tool adds a warning note that the soil is very acidic and liming is strongly recommended. Soils at this pH may also require split applications.
 
 The maximum single application is 7.5 t/ha. If the calculated requirement exceeds this, the tool advises applying lime in split dressings over successive years.
 

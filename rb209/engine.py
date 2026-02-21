@@ -14,7 +14,7 @@ from rb209.models import (
     SoilType,
 )
 from rb209.data.crops import CROP_INFO
-from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION
+from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION, MIN_PH_FOR_LIMING, TARGET_PH
 from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS
 from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC
 from rb209.data.organic import (
@@ -569,15 +569,28 @@ def calculate_organic(
 
 def calculate_lime(
     current_ph: float,
-    target_ph: float,
+    target_ph: float | None,
     soil_type: str,
+    land_use: str | None = None,
 ) -> LimeRecommendation:
     """Calculate lime requirement.
 
+    ``target_ph`` may be omitted (``None``) when ``land_use`` is supplied;
+    the RB209 default target pH is then used automatically (arable: 6.5,
+    grassland: 6.0).  Passing an explicit ``target_ph`` always takes
+    precedence over the ``land_use`` default.
+
+    When the current pH is below the RB209 minimum liming threshold
+    (``MIN_PH_FOR_LIMING = 5.0``), an advisory note is included in the result
+    to flag the severity.
+
     Args:
         current_ph: Current soil pH.
-        target_ph: Target soil pH.
+        target_ph: Target soil pH, or ``None`` to derive from ``land_use``.
         soil_type: Soil type ("light", "medium", "heavy", "organic").
+        land_use: Land use category for automatic target pH selection:
+            "arable" (default target 6.5) or "grassland" (default target 6.0).
+            Required when ``target_ph`` is ``None``; ignored otherwise.
     """
     try:
         SoilType(soil_type)
@@ -585,12 +598,32 @@ def calculate_lime(
         valid = ", ".join(s.value for s in SoilType)
         raise ValueError(f"Unknown soil type '{soil_type}'. Valid options: {valid}")
 
+    if target_ph is None:
+        valid_land_uses = tuple(TARGET_PH.keys())
+        if land_use is None:
+            raise ValueError(
+                "Either target_ph or land_use must be provided. "
+                f"Valid land_use values: {', '.join(valid_land_uses)}"
+            )
+        if land_use not in TARGET_PH:
+            raise ValueError(
+                f"Unknown land_use '{land_use}'. "
+                f"Valid options: {', '.join(valid_land_uses)}"
+            )
+        target_ph = TARGET_PH[land_use]
+
     if not (3.0 <= current_ph <= 9.0):
         raise ValueError(f"Current pH must be between 3.0 and 9.0, got {current_ph}")
     if not (4.0 <= target_ph <= 8.5):
         raise ValueError(f"Target pH must be between 4.0 and 8.5, got {target_ph}")
 
     notes: list[str] = []
+
+    if current_ph < MIN_PH_FOR_LIMING:
+        notes.append(
+            f"Soil pH ({current_ph}) is below {MIN_PH_FOR_LIMING}. "
+            "Soil is very acidic — liming is strongly recommended."
+        )
 
     if current_ph >= target_ph:
         notes.append("Soil pH is already at or above target. No lime required.")
