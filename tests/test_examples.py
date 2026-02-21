@@ -1,9 +1,14 @@
-"""Tests based on RB209 worked examples 4.1–4.5.
+"""Tests based on RB209 worked examples.
 
-Each test method corresponds to a step in one of the five worked examples
-from Section 4 of the RB209 9th edition.  Tests assert the published RB209
-values as the source of truth.  Where the code's current data tables differ,
-the test will fail — highlighting a data correction needed.
+Each test method corresponds to a step in one of the worked examples
+from the RB209 9th edition.  Tests assert the published RB209 values as the
+source of truth.  Where the code's current data tables differ, the test will
+fail — highlighting a data correction needed.
+
+Covered examples:
+  Section 2 (Organic Materials): Examples 2.2–2.5
+  Section 4 (Arable Crops):     Examples 4.1–4.5
+  Section 5 (Potatoes):         Examples 5.3–5.4
 """
 
 import unittest
@@ -15,6 +20,8 @@ from rb209.engine import (
     calculate_sns,
     combine_sns,
     recommend_nitrogen,
+    recommend_phosphorus,
+    recommend_potassium,
     sns_value_to_index,
 )
 from rb209.models import (
@@ -309,6 +316,280 @@ class TestRB209Examples(unittest.TestCase):
         )
         self.assertEqual(result.sns_index, 2)
         self.assertEqual(result.method, "combined")
+
+
+class TestSection2OrganicExamples(unittest.TestCase):
+    """Tests based on RB209 Section 2 worked examples 2.2–2.5.
+
+    These examples demonstrate how to calculate the nutrient value of
+    organic material applications and determine net fertiliser requirements.
+    """
+
+    # ── Example 2.2 ─────────────────────────────────────────────────
+    # 30 m³/ha of cattle slurry (6% DM), surface-applied in early spring
+    # before first-cut silage.  Soil at P Index 2 and K Index 2-.
+    # Total N: 2.6 kg/m³ × 30 = 78 kg/ha.
+    # Crop-available N: 35% of total = 0.9 kg/m³ → 27 kg/ha.
+    # P2O5: 1.2 kg/m³ × 30 = 36 kg/ha.
+    # K2O: 2.5 kg/m³ × 30 = 75 kg/ha.
+    # Silage N requirement: 120 kg/ha.
+    # Net fertiliser N: 120 – 27 = 93 kg/ha.
+
+    def test_example_2_2_cattle_slurry_total_n(self):
+        """30 m³/ha cattle slurry (6% DM) -> 78 kg/ha total N."""
+        result = calculate_organic("cattle-slurry", 30)
+        self.assertAlmostEqual(result.total_n, 78.0)
+
+    def test_example_2_2_cattle_slurry_p2o5(self):
+        """30 m³/ha cattle slurry -> 36 kg/ha P2O5 (1.2 × 30)."""
+        result = calculate_organic("cattle-slurry", 30)
+        self.assertAlmostEqual(result.p2o5, 36.0)
+
+    def test_example_2_2_cattle_slurry_k2o(self):
+        """30 m³/ha cattle slurry -> 75 kg/ha K2O (2.5 × 30)."""
+        result = calculate_organic("cattle-slurry", 30)
+        self.assertAlmostEqual(result.k2o, 75.0)
+
+    def test_example_2_2_cattle_slurry_spring_available_n(self):
+        """Cattle slurry, spring, surface-applied -> 35% of total N available.
+
+        Table 2.9: spring, medium/heavy soil, not incorporated = 35%.
+        0.35 × 2.6 × 30 = 27.3 kg/ha (reference rounds to 27).
+        """
+        result = calculate_organic(
+            "cattle-slurry", 30, timing="spring", incorporated=False
+        )
+        self.assertAlmostEqual(result.available_n, 27.3, places=0)
+
+    def test_example_2_2_net_fertiliser_n_for_silage(self):
+        """First-cut silage needs 120 kg N/ha; slurry provides ~27 -> net ~93."""
+        organic = calculate_organic(
+            "cattle-slurry", 30, timing="spring", incorporated=False
+        )
+        silage_n_requirement = 120  # from example Stage 4
+        net = silage_n_requirement - organic.available_n
+        self.assertAlmostEqual(net, 92.7, places=0)
+
+    # ── Example 2.3 ─────────────────────────────────────────────────
+    # 35 t/ha of pig FYM applied in autumn to a clay soil before drilling
+    # oilseed rape (3.5 t/ha seed yield, straw not removed).
+    # FYM is not rapidly incorporated.
+    # SNS Index 1, P Index 2, K Index 2-.
+    # Total N: 7.0 kg/t × 35 = 245 kg/ha.
+    # Available N: 10% of total (autumn, medium/heavy, not incorporated)
+    #   = 0.7 kg/t × 35 = 24.5 kg/ha (reference says 25).
+    # P2O5: 6.0 kg/t × 35 = 210 kg/ha.
+    # K2O: 8.0 kg/t × 35 = 280 kg/ha (Table 2.4).
+    # OSR N rec at SNS 1 = 220 kg N/ha.
+    # Net fertiliser N = 220 – 25 = 195 kg N/ha.
+
+    def test_example_2_3_pig_fym_total_n(self):
+        """35 t/ha pig FYM -> 245 kg/ha total N (7.0 × 35)."""
+        result = calculate_organic("pig-fym", 35)
+        self.assertAlmostEqual(result.total_n, 245.0)
+
+    def test_example_2_3_pig_fym_available_n_autumn(self):
+        """Pig FYM, autumn, clay (heavy) soil, not incorporated -> 10% avail.
+
+        Table 2.3: autumn, medium/heavy, surface-applied = 10%.
+        0.10 × 7.0 × 35 = 24.5 kg/ha.
+        """
+        result = calculate_organic(
+            "pig-fym", 35, timing="autumn", soil_type="heavy", incorporated=False
+        )
+        self.assertAlmostEqual(result.available_n, 24.5)
+
+    def test_example_2_3_pig_fym_p2o5(self):
+        """35 t/ha pig FYM -> 210 kg/ha P2O5 (6.0 × 35, Table 2.4)."""
+        result = calculate_organic("pig-fym", 35)
+        self.assertAlmostEqual(result.p2o5, 210.0)
+
+    def test_example_2_3_pig_fym_k2o(self):
+        """35 t/ha pig FYM -> 280 kg/ha K2O (8.0 × 35, Table 2.4)."""
+        result = calculate_organic("pig-fym", 35)
+        self.assertAlmostEqual(result.k2o, 280.0)
+
+    def test_example_2_3_osr_phosphorus_at_p2(self):
+        """Oilseed rape at P Index 2 -> 50 kg P2O5/ha (Section 4)."""
+        self.assertEqual(recommend_phosphorus("winter-oilseed-rape", 2), 50)
+
+    def test_example_2_3_net_fertiliser_n(self):
+        """OSR N rec (220) – FYM available N (~25) = ~195 kg N/ha.
+
+        The FYM provides 24.5 kg/ha available N.  The reference rounds to 25
+        and arrives at 195 kg/ha net.  We verify the organic calculation step.
+        """
+        organic = calculate_organic(
+            "pig-fym", 35, timing="autumn", soil_type="heavy", incorporated=False
+        )
+        # Reference: N rec = 220, available N ≈ 25, net = 195
+        osr_n_rec = 220
+        net = osr_n_rec - organic.available_n
+        self.assertAlmostEqual(net, 195.5, places=0)
+
+    # ── Example 2.4 ─────────────────────────────────────────────────
+    # 20 t/ha of digested cake (biosolids) applied in autumn before
+    # oilseed rape on medium soil, incorporated by ploughing within 24 h.
+    # SNS Index 1, P Index 2, K Index 2-.
+    # Total N: 11 kg/t × 20 = 220 kg/ha (Table 2.14).
+    # Available N: 15% of total (autumn, medium/heavy, incorporated)
+    #   = 1.65 kg/t × 20 = 33 kg/ha.
+    # P2O5: 11 kg/t × 20 = 220 kg/ha (Table 2.16).
+    # K2O: 0.6 kg/t × 20 = 12 kg/ha.
+    # OSR N rec at SNS 1 = 220 kg/ha.
+    # Net fertiliser N = 220 – 33 = 187 kg/ha.
+
+    def test_example_2_4_biosolids_total_n(self):
+        """20 t/ha biosolids digested cake -> 220 kg/ha total N (11 × 20).
+
+        Table 2.14: digested cake total N = 11 kg N/t.
+        """
+        result = calculate_organic("biosolids-cake", 20)
+        self.assertAlmostEqual(result.total_n, 220.0)
+
+    def test_example_2_4_biosolids_available_n_autumn_incorporated(self):
+        """Biosolids, autumn, medium soil, incorporated -> 15% of total N.
+
+        Table 2.15: autumn, medium/heavy, incorporated = 15%.
+        0.15 × 11 × 20 = 33 kg/ha.
+        """
+        result = calculate_organic(
+            "biosolids-cake", 20,
+            timing="autumn", soil_type="medium", incorporated=True,
+        )
+        self.assertAlmostEqual(result.available_n, 33.0)
+
+    def test_example_2_4_biosolids_p2o5(self):
+        """20 t/ha biosolids -> 220 kg/ha P2O5 (11 × 20, Table 2.16)."""
+        result = calculate_organic("biosolids-cake", 20)
+        self.assertAlmostEqual(result.p2o5, 220.0)
+
+    def test_example_2_4_biosolids_k2o(self):
+        """20 t/ha biosolids -> 12 kg/ha K2O (0.6 × 20, Table 2.16)."""
+        result = calculate_organic("biosolids-cake", 20)
+        self.assertAlmostEqual(result.k2o, 12.0)
+
+    def test_example_2_4_net_fertiliser_n(self):
+        """OSR N rec (220) – biosolids available N (33) = 187 kg N/ha."""
+        organic = calculate_organic(
+            "biosolids-cake", 20,
+            timing="autumn", soil_type="medium", incorporated=True,
+        )
+        osr_n_rec = 220
+        net = osr_n_rec - organic.available_n
+        self.assertAlmostEqual(net, 187.0)
+
+    # ── Example 2.5 ─────────────────────────────────────────────────
+    # 30 t/ha of green compost applied in autumn to a sandy soil before
+    # drilling winter barley (8 t/ha grain yield, straw baled).
+    # P Index 2, K Index 2-.
+    # Total N: 7.5 kg/t × 30 = 225 kg/ha (Table 2.17).
+    # Available N: NIL (green compost N availability is negligible).
+    # P2O5: 3.0 kg/t × 30 = 90 kg/ha.
+    # K2O: 6.8 kg/t × 30 = 204 kg/ha.
+
+    def test_example_2_5_green_compost_total_n(self):
+        """30 t/ha green compost -> 225 kg/ha total N (7.5 × 30, Table 2.17)."""
+        result = calculate_organic("green-compost", 30)
+        self.assertAlmostEqual(result.total_n, 225.0)
+
+    def test_example_2_5_green_compost_available_n_negligible(self):
+        """Green compost available N is negligible (reference says NIL)."""
+        result = calculate_organic("green-compost", 30)
+        self.assertLess(result.available_n, 15.0)
+
+    def test_example_2_5_green_compost_p2o5(self):
+        """30 t/ha green compost -> 90 kg/ha P2O5 (3.0 × 30, Table 2.17)."""
+        result = calculate_organic("green-compost", 30)
+        self.assertAlmostEqual(result.p2o5, 90.0)
+
+    def test_example_2_5_green_compost_k2o(self):
+        """30 t/ha green compost -> 204 kg/ha K2O (6.8 × 30, Table 2.17)."""
+        result = calculate_organic("green-compost", 30)
+        self.assertAlmostEqual(result.k2o, 204.0)
+
+
+class TestSection5PotatoExamples(unittest.TestCase):
+    """Tests based on RB209 Section 5 worked examples 5.3–5.4.
+
+    These examples demonstrate how to calculate nitrogen requirements for
+    potato crops using SNS assessment and organic manure adjustments.
+    The potato section uses Tables 5.4–5.6 for SNS, which correspond to
+    the arable Tables 4.3–4.5 but may differ for some crop/soil/rainfall
+    combinations.
+    """
+
+    # ── Example 5.3 ─────────────────────────────────────────────────
+    # Maris Piper potatoes on medium soil near Cambridge (low rainfall).
+    # Previous crop: winter barley (a cereal).
+    # Table 5.4: cereals, medium soil, low rainfall -> SNS Index 1.
+    # Variety group 3, growing season >120 days.
+    # N recommendation: 180 kg N/ha (range 150–210, Table 5.10).
+    # No organic manures applied.
+
+    def test_example_5_3_sns_index(self):
+        """Cereals, medium soil, low rainfall -> SNS 1 (Table 5.4).
+
+        Table 5.4 for potatoes should give the same result as Table 4.3
+        for this combination.
+        """
+        result = calculate_sns("cereals", "medium", "low")
+        self.assertEqual(result.sns_index, 1)
+
+    def test_example_5_3_cereals_n_residue_is_low(self):
+        """Winter barley is a cereal — LOW N-residue category."""
+        self.assertEqual(
+            PREVIOUS_CROP_N_CATEGORY[PreviousCrop.CEREALS],
+            NResidueCategory.LOW,
+        )
+
+    # ── Example 5.4 ─────────────────────────────────────────────────
+    # Estima potatoes in Somerset (high rainfall), medium soil.
+    # Previous crop: oilseed rape.
+    # Table 5.6: oilseed rape, medium soil, high rainfall -> SNS Index 1.
+    # Variety group 1, growing season 60–90 days.
+    # N recommendation: 185 kg N/ha (160–210 range), adjusted to 200.
+    # 40 t/ha cattle FYM applied in winter, ploughed in one week later.
+    # Crop-available N from FYM = 24 kg/ha.
+    # Manufactured N = 200 – 24 = 176 kg N/ha.
+
+    def test_example_5_4_oilseed_rape_n_residue_is_medium(self):
+        """Oilseed rape is classified as MEDIUM N-residue."""
+        self.assertEqual(
+            PREVIOUS_CROP_N_CATEGORY[PreviousCrop.OILSEED_RAPE],
+            NResidueCategory.MEDIUM,
+        )
+
+    def test_example_5_4_cattle_fym_available_n_winter_incorporated(self):
+        """40 t/ha cattle FYM, winter, medium soil, ploughed in -> 24 kg/ha.
+
+        Table 2.3: winter, medium/heavy, incorporated = 10%.
+        0.10 × 6.0 × 40 = 24.0 kg/ha.
+        """
+        result = calculate_organic(
+            "cattle-fym", 40,
+            timing="winter", soil_type="medium", incorporated=True,
+        )
+        self.assertAlmostEqual(result.available_n, 24.0)
+
+    def test_example_5_4_cattle_fym_total_n(self):
+        """40 t/ha cattle FYM -> 240 kg/ha total N (6.0 × 40)."""
+        result = calculate_organic("cattle-fym", 40)
+        self.assertAlmostEqual(result.total_n, 240.0)
+
+    def test_example_5_4_net_fertiliser_n(self):
+        """Adjusted N rec (200) – FYM available N (24) = 176 kg N/ha.
+
+        The reference adjusts the base recommendation of 185 up to 200
+        due to a cold spring, then subtracts the FYM contribution.
+        """
+        organic = calculate_organic(
+            "cattle-fym", 40,
+            timing="winter", soil_type="medium", incorporated=True,
+        )
+        adjusted_n_rec = 200  # Example's adjusted figure
+        net = adjusted_n_rec - organic.available_n
+        self.assertAlmostEqual(net, 176.0)
 
 
 if __name__ == "__main__":
