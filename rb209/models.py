@@ -133,6 +133,7 @@ class OrganicNutrients:
     """Nutrients supplied by an organic material application."""
     material: str
     rate: float            # t/ha or m3/ha
+    unit: str              # "t" or "m3"
     total_n: float         # kg/ha
     available_n: float     # kg/ha (crop-available in year 1)
     p2o5: float            # kg/ha

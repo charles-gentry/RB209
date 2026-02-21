@@ -86,7 +86,8 @@ def format_sns(result: SNSResult, fmt: str = "table") -> str:
         if result.sns_value is not None:
             rows.append(("Total SNS", f"{result.sns_value:.0f} kg N/ha"))
     else:
-        rows.append(("Previous crop", result.previous_crop))
+        if result.previous_crop:
+            rows.append(("Previous crop", result.previous_crop))
         rows.append(("Soil type", result.soil_type))
         rows.append(("Rainfall", result.rainfall))
 
@@ -101,7 +102,7 @@ def format_organic(org: OrganicNutrients, fmt: str = "table") -> str:
         return json.dumps(asdict(org), indent=2)
 
     rows = [
-        ("Application rate", f"{org.rate:.1f}"),
+        ("Application rate", f"{org.rate:.1f} {org.unit}/ha"),
         ("Total N", f"{org.total_n:.1f} kg/ha"),
         ("Available N (yr 1)", f"{org.available_n:.1f} kg/ha"),
         ("P2O5", f"{org.p2o5:.1f} kg/ha"),

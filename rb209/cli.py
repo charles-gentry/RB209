@@ -198,10 +198,16 @@ def build_parser() -> argparse.ArgumentParser:
                         metavar="0-9", help="Soil potassium index (0-9)")
     p_rec.add_argument("--mg-index", type=int, default=2,
                         metavar="0-9", help="Soil magnesium index (default: 2)")
-    p_rec.add_argument("--straw-removed", action="store_true", default=True,
-                        help="Straw removed from field (cereals, default: true)")
-    p_rec.add_argument("--straw-incorporated", action="store_true",
-                        help="Straw incorporated into field (cereals)")
+    straw_group_rec = p_rec.add_mutually_exclusive_group()
+    straw_group_rec.add_argument(
+        "--straw-removed", dest="straw_removed", action="store_true",
+        help="Straw removed from field (cereals, default)",
+    )
+    straw_group_rec.add_argument(
+        "--straw-incorporated", dest="straw_removed", action="store_false",
+        help="Straw incorporated into field (cereals)",
+    )
+    p_rec.set_defaults(straw_removed=True)
     p_rec.add_argument("--soil-type",
                         choices=[s.value for s in SoilType],
                         help="Soil type for soil-specific N recommendations")
@@ -235,10 +241,16 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Crop type")
     p_k.add_argument("--k-index", required=True, type=int,
                       metavar="0-9", help="Soil potassium index (0-9)")
-    p_k.add_argument("--straw-removed", action="store_true", default=True,
-                      help="Straw removed (cereals, default: true)")
-    p_k.add_argument("--straw-incorporated", action="store_true",
-                      help="Straw incorporated (cereals)")
+    straw_group_k = p_k.add_mutually_exclusive_group()
+    straw_group_k.add_argument(
+        "--straw-removed", dest="straw_removed", action="store_true",
+        help="Straw removed (cereals, default)",
+    )
+    straw_group_k.add_argument(
+        "--straw-incorporated", dest="straw_removed", action="store_false",
+        help="Straw incorporated (cereals)",
+    )
+    p_k.set_defaults(straw_removed=True)
     _add_format_arg(p_k)
     p_k.set_defaults(func=_handle_potassium)
 
@@ -390,10 +402,6 @@ def main(argv: list[str] | None = None) -> None:
     if not args.command:
         parser.print_help()
         sys.exit(0)
-
-    # Handle straw-incorporated flag overriding straw-removed
-    if hasattr(args, "straw_incorporated") and args.straw_incorporated:
-        args.straw_removed = False
 
     try:
         args.func(args)
