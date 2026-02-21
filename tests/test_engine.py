@@ -79,6 +79,32 @@ class TestNitrogen(unittest.TestCase):
         with self.assertRaises(ValueError):
             recommend_nitrogen("spring-barley", 2, soil_type="medium")
 
+    def test_bool_true_sns_raises(self):
+        # bool is a subclass of int; True == 1 but must be rejected
+        with self.assertRaises(ValueError):
+            recommend_nitrogen("winter-wheat-feed", True)
+
+    def test_bool_false_sns_raises(self):
+        # False == 0 but must be rejected
+        with self.assertRaises(ValueError):
+            recommend_nitrogen("winter-wheat-feed", False)
+
+
+class TestValidateIndex(unittest.TestCase):
+    """Ensure _validate_index rejects bool values across all index parameters."""
+
+    def test_phosphorus_bool_raises(self):
+        with self.assertRaises(ValueError):
+            recommend_phosphorus("winter-wheat-feed", True)
+
+    def test_potassium_bool_raises(self):
+        with self.assertRaises(ValueError):
+            recommend_potassium("winter-wheat-feed", True)
+
+    def test_magnesium_bool_raises(self):
+        with self.assertRaises(ValueError):
+            recommend_magnesium(True)
+
 
 class TestPhosphorus(unittest.TestCase):
     def test_cereals_p0(self):
