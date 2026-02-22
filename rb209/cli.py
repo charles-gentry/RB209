@@ -12,6 +12,7 @@ from rb209.engine import (
     calculate_organic,
     calculate_smn_sns,
     calculate_sns,
+    nitrogen_timing,
     recommend_all,
     recommend_nitrogen,
     recommend_phosphorus,
@@ -26,6 +27,7 @@ from rb209.formatters import (
     format_recommendation,
     format_single_nutrient,
     format_sns,
+    format_timing,
 )
 from rb209.models import Crop, OrganicMaterial, PreviousCrop, Rainfall, SoilType
 
@@ -153,6 +155,12 @@ def _handle_lime(args: argparse.Namespace) -> None:
         sys.exit(2)
     result = calculate_lime(args.current_ph, target_ph, args.soil_type, land_use=land_use, crop=crop)
     print(format_lime(result, args.output_format))
+
+
+def _handle_timing(args: argparse.Namespace) -> None:
+    soil = getattr(args, "soil_type", None)
+    result = nitrogen_timing(args.crop, args.total_n, soil_type=soil)
+    print(format_timing(result, args.output_format))
 
 
 def _handle_list_crops(args: argparse.Namespace) -> None:
@@ -405,6 +413,22 @@ def build_parser() -> argparse.ArgumentParser:
                          ))
     _add_format_arg(p_lime)
     p_lime.set_defaults(func=_handle_lime)
+
+    # ── timing ───────────────────────────────────────────────────
+    p_tim = subparsers.add_parser(
+        "timing",
+        help="Nitrogen application timing and split dressing advice",
+    )
+    p_tim.add_argument("--crop", required=True, choices=_crop_choices(),
+                       help="Crop type")
+    p_tim.add_argument("--total-n", required=True, type=float,
+                       metavar="kg/ha",
+                       help="Total nitrogen recommendation (kg N/ha)")
+    p_tim.add_argument("--soil-type",
+                       choices=[s.value for s in SoilType],
+                       help="Soil type (affects timing for some crops, e.g. potatoes)")
+    _add_format_arg(p_tim)
+    p_tim.set_defaults(func=_handle_timing)
 
     # ── list-crops ───────────────────────────────────────────────
     p_lc = subparsers.add_parser("list-crops", help="List available crops")

@@ -211,6 +211,70 @@ class TestCLIVersion(unittest.TestCase):
         self.assertIn("0.1.0", result.stdout)
 
 
+class TestCLITiming(unittest.TestCase):
+    def test_timing_basic(self):
+        result = _run_cli(
+            "timing",
+            "--crop", "winter-barley",
+            "--total-n", "180",
+        )
+        self.assertEqual(result.returncode, 0)
+        # Two splits of 90 kg/ha each
+        self.assertIn("90", result.stdout)
+
+    def test_timing_json(self):
+        result = _run_cli(
+            "timing",
+            "--crop", "winter-barley",
+            "--total-n", "180",
+            "--format", "json",
+        )
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertIn("splits", data)
+        self.assertIsInstance(data["splits"], list)
+        self.assertEqual(len(data["splits"]), 2)
+
+    def test_timing_missing_total_n(self):
+        result = _run_cli("timing", "--crop", "winter-barley")
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_timing_invalid_crop(self):
+        result = _run_cli("timing", "--crop", "banana", "--total-n", "100")
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_timing_potatoes_light_soil(self):
+        result = _run_cli(
+            "timing",
+            "--crop", "potatoes-maincrop",
+            "--total-n", "270",
+            "--soil-type", "light",
+        )
+        self.assertEqual(result.returncode, 0)
+        # 2/3 of 270 = 180
+        self.assertIn("180", result.stdout)
+
+    def test_timing_json_total_n_field(self):
+        result = _run_cli(
+            "timing",
+            "--crop", "winter-wheat-feed",
+            "--total-n", "150",
+            "--format", "json",
+        )
+        self.assertEqual(result.returncode, 0)
+        data = json.loads(result.stdout)
+        self.assertAlmostEqual(data["total_n"], 150.0)
+
+    def test_timing_no_rules_crop_returns_single(self):
+        result = _run_cli(
+            "timing",
+            "--crop", "linseed",
+            "--total-n", "70",
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("70", result.stdout)
+
+
 class TestCLILimeCrop(unittest.TestCase):
     def test_lime_with_crop_potato_shows_scab_warning(self):
         result = _run_cli(
