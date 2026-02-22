@@ -54,6 +54,7 @@ def _add_format_arg(parser: argparse.ArgumentParser) -> None:
 
 def _handle_recommend(args: argparse.Namespace) -> None:
     soil = getattr(args, "soil_type", None)
+    expected_yield = getattr(args, "expected_yield", None)
     rec = recommend_all(
         crop=args.crop,
         sns_index=args.sns_index,
@@ -62,25 +63,29 @@ def _handle_recommend(args: argparse.Namespace) -> None:
         mg_index=args.mg_index,
         straw_removed=args.straw_removed,
         soil_type=soil,
+        expected_yield=expected_yield,
     )
     print(format_recommendation(rec, args.output_format))
 
 
 def _handle_nitrogen(args: argparse.Namespace) -> None:
     soil = getattr(args, "soil_type", None)
-    value = recommend_nitrogen(args.crop, args.sns_index, soil_type=soil)
+    expected_yield = getattr(args, "expected_yield", None)
+    value = recommend_nitrogen(args.crop, args.sns_index, soil_type=soil, expected_yield=expected_yield)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Nitrogen (N)", "kg/ha", value, args.output_format))
 
 
 def _handle_phosphorus(args: argparse.Namespace) -> None:
-    value = recommend_phosphorus(args.crop, args.p_index)
+    expected_yield = getattr(args, "expected_yield", None)
+    value = recommend_phosphorus(args.crop, args.p_index, expected_yield=expected_yield)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Phosphorus (P2O5)", "kg/ha", value, args.output_format))
 
 
 def _handle_potassium(args: argparse.Namespace) -> None:
-    value = recommend_potassium(args.crop, args.k_index, args.straw_removed)
+    expected_yield = getattr(args, "expected_yield", None)
+    value = recommend_potassium(args.crop, args.k_index, args.straw_removed, expected_yield=expected_yield)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Potassium (K2O)", "kg/ha", value, args.output_format))
 
@@ -228,6 +233,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--soil-type",
                         choices=[s.value for s in SoilType],
                         help="Soil type for soil-specific N recommendations")
+    p_rec.add_argument("--expected-yield", type=float, default=None,
+                        metavar="t/ha",
+                        help="Expected yield (t/ha) for yield-adjusted recommendations")
     _add_format_arg(p_rec)
     p_rec.set_defaults(func=_handle_recommend)
 
@@ -240,6 +248,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_n.add_argument("--soil-type",
                       choices=[s.value for s in SoilType],
                       help="Soil type for soil-specific recommendation")
+    p_n.add_argument("--expected-yield", type=float, default=None,
+                      metavar="t/ha",
+                      help="Expected yield (t/ha) for yield-adjusted N recommendation")
     _add_format_arg(p_n)
     p_n.set_defaults(func=_handle_nitrogen)
 
@@ -249,6 +260,9 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Crop type")
     p_p.add_argument("--p-index", required=True, type=int,
                       metavar="0-9", help="Soil phosphorus index (0-9)")
+    p_p.add_argument("--expected-yield", type=float, default=None,
+                      metavar="t/ha",
+                      help="Expected yield (t/ha) for yield-adjusted P recommendation")
     _add_format_arg(p_p)
     p_p.set_defaults(func=_handle_phosphorus)
 
@@ -268,6 +282,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Straw incorporated (cereals)",
     )
     p_k.set_defaults(straw_removed=True)
+    p_k.add_argument("--expected-yield", type=float, default=None,
+                      metavar="t/ha",
+                      help="Expected yield (t/ha) for yield-adjusted K recommendation")
     _add_format_arg(p_k)
     p_k.set_defaults(func=_handle_potassium)
 

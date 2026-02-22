@@ -758,12 +758,14 @@ test_timing_missing_total_n
 
 ---
 
-## Phase 3 — Yield Adjustments
+## Phase 3 — Yield Adjustments ✓ IMPLEMENTED
 
 Add an optional `--expected-yield` parameter that adjusts N, P, and K
 recommendations based on RB209 yield correction factors.
 
 **Priority:** Medium | **Complexity:** Medium | **RB209 Source:** S4 p.26, S5 p.8
+
+**Status:** Complete — new tests in `tests/test_yield.py`.
 
 ---
 
