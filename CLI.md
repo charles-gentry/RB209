@@ -171,6 +171,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 - For cereal crops with `has_straw_option`, passing `--straw-incorporated` sets `straw_removed=false`, reducing the K recommendation. Default is straw removed. `--straw-removed` and `--straw-incorporated` are mutually exclusive; passing both is an error.
 - The `--mg-index` defaults to 2 (target index). At index 2 or above, MgO recommendation is 0.
 - P, K, and Mg indices above 4 are clamped to 4, which returns 0 kg/ha for all three nutrients.
+- The `notes` array in the output may include contextual advisory notes beyond the basic crop note. See [Contextual Advisory Notes](#contextual-advisory-notes) for the full list of notes that can appear.
 
 ---
 
@@ -594,7 +595,10 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
   "p2o5": 80.0,
   "k2o": 200.0,
   "mgo": 45.0,
-  "so3": 75.0
+  "so3": 75.0,
+  "notes": [
+    "Do not apply organic materials to soils that are waterlogged, frozen hard, snow-covered, or deeply cracked."
+  ]
 }
 ```
 
@@ -611,6 +615,7 @@ $ rb209 organic --material pig-slurry --rate 30 --timing spring --incorporated
 | `k2o` | float | Potassium as K2O (kg/ha) |
 | `mgo` | float | Magnesium as MgO (kg/ha) |
 | `so3` | float | Sulfur as SO3 (kg/ha) |
+| `notes` | string[] | Advisory notes — always includes a soil condition warning |
 
 **Notes:**
 - `total_n` is the total nitrogen in the application. `available_n` is the portion available to the crop in year 1 (typically 5–15 % of total N for farmyard manures and composts, higher for slurries and poultry manures).
@@ -651,6 +656,7 @@ Either `--target-ph` or `--land-use` must be supplied.  When `--land-use` is giv
 | `--target-ph` | No* | float | `4.0` to `8.5` | -- | Target soil pH. Required when `--land-use` is omitted. |
 | `--land-use` | No* | string | `arable`, `grassland` | -- | Land use for automatic target pH selection (arable → 6.5, grassland → 6.0). Required when `--target-ph` is omitted. |
 | `--soil-type` | Yes | string | `light`, `medium`, `heavy`, `organic` | -- | Soil texture category |
+| `--crop` | No | string | See [Crops](#crops) | -- | Optional crop type. When a potato crop is specified and lime is required, a warning about common scab and Mn deficiency risk is added. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 \* One of `--target-ph` or `--land-use` must be provided.
@@ -769,6 +775,8 @@ $ rb209 lime --current-ph 4.5 --target-ph 7.5 --soil-type heavy
 - Lime requirement = (target_ph - current_ph) * soil_factor. Soil factors: light=4.0, medium=5.5, heavy=7.5, organic=11.0 t CaCO3/ha per pH unit.
 - If lime required exceeds 7.5 t/ha, the tool advises splitting applications over successive years.
 - When current pH is below **5.0**, a warning note is added: soil is very acidic and liming is strongly recommended.
+- When `--crop` is a potato type (`potatoes-maincrop`, `potatoes-early`, `potatoes-seed`) and lime is required (> 0), a note warns that liming immediately before potatoes increases common scab and Mn deficiency risk.
+- Over-liming trace element notes: grassland raised above pH 7.0 risks Cu/Co/Se deficiency; any soil above pH 7.5 risks Mn deficiency; light (sandy) soils above pH 6.5 risk Mn deficiency; organic/peaty soils above pH 6.0 risk Mn deficiency. These notes are only added when lime is actually needed. See [Contextual Advisory Notes](#contextual-advisory-notes).
 
 ---
 
@@ -1061,6 +1069,37 @@ Non-cereal crops are not affected by the straw flags.
 
 The P, K, and Mg index arguments accept values 0-9 to match the full UK soil index scale, but the recommendation lookup tables only contain data for indices 0-4. Any index above 4 is silently clamped to 4 before lookup. Since index 4 returns 0 kg/ha for all three nutrients, passing index 5-9 also returns 0. The SNS index (0-6) is not clamped and rejects out-of-range values with an error.
 
+### Contextual Advisory Notes
+
+Several commands add contextual advisory notes to their output alongside the numeric recommendations. Notes are always included in the `notes` array in JSON output and are rendered in the box footer in table output.
+
+**`recommend` command notes:**
+
+| Trigger | Note content |
+|---------|-------------|
+| N recommendation exceeds NVZ N-max limit for crop (e.g. 220 kg/ha for cereals, 250 for OSR) | NVZ N-max warning with exact recommendation and limit values |
+| Potato crop with K2O > 300 kg/ha | Split potash application advice (autumn/winter + spring) |
+| `grass-silage` with K2O > 90 kg/ha | Limit spring K2O to 80–90 kg/ha to minimise luxury uptake |
+| Grassland crop with Mg Index 0 and K2O > 0 | Hypomagnesaemia (grass staggers) risk; avoid spring potash |
+| Grassland crop with `clover_risk` flag and N > 0 | Mineral N inhibits clover N fixation |
+| Arable crop on `light` soil with N + K2O > 150 kg/ha | Combine-drill seedbed limit warning |
+
+**`lime` command notes (when lime is required):**
+
+| Trigger | Note content |
+|---------|-------------|
+| `--crop` is a potato type | Common scab and Mn deficiency risk from liming before potatoes |
+| Target pH > 7.0 and `land_use="grassland"` | Cu, Co, Se deficiency risk above pH 7.0 on grassland |
+| Target pH > 7.5 | Mn deficiency risk above pH 7.5 |
+| `soil_type="light"` and target pH > 6.5 | Mn deficiency more likely above pH 6.5 on sandy soils |
+| `soil_type="organic"` and target pH > 6.0 | Mn deficiency more likely above pH 6.0 on organic/peaty soils |
+
+**`organic` command notes:**
+
+Every `organic` result includes a fixed note reminding users not to apply organic materials to waterlogged, frozen, snow-covered, or deeply cracked soils.
+
+---
+
 ### Lime Calculation
 
 Lime requirement is calculated as:
@@ -1081,6 +1120,8 @@ Soil factors (tonnes CaCO3/ha per pH unit): light = 4.0, medium = 5.5, heavy = 7
 **Very acidic soils:** When the current pH is below 5.0, the tool adds a warning note that the soil is very acidic and liming is strongly recommended. Soils at this pH may also require split applications.
 
 The maximum single application is 7.5 t/ha. If the calculated requirement exceeds this, the tool advises applying lime in split dressings over successive years.
+
+**Over-liming and trace element risks:** When lime is required, the tool checks the target pH for trace-element deficiency risks. See [Contextual Advisory Notes](#contextual-advisory-notes) for the full set of conditions and the associated note text. Pass `--crop` with a potato type to also trigger the common scab warning.
 
 ### Organic Material Nutrients
 
