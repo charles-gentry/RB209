@@ -12,44 +12,6 @@ class SoilType(Enum):
     ORGANIC = "organic"    # Peaty, organic soils
 
 
-class CropCategory(Enum):
-    """Broad crop grouping."""
-    ARABLE = "arable"
-    GRASSLAND = "grassland"
-    POTATOES = "potatoes"
-
-
-class Crop(Enum):
-    """All supported crops."""
-    # Cereals
-    WINTER_WHEAT_FEED = "winter-wheat-feed"
-    WINTER_WHEAT_MILLING = "winter-wheat-milling"
-    SPRING_WHEAT = "spring-wheat"
-    WINTER_BARLEY = "winter-barley"
-    SPRING_BARLEY = "spring-barley"
-    WINTER_OATS = "winter-oats"
-    SPRING_OATS = "spring-oats"
-    WINTER_RYE = "winter-rye"
-    # Oilseeds
-    WINTER_OILSEED_RAPE = "winter-oilseed-rape"
-    SPRING_OILSEED_RAPE = "spring-oilseed-rape"
-    LINSEED = "linseed"
-    # Pulses
-    PEAS = "peas"
-    FIELD_BEANS = "field-beans"
-    # Root/forage
-    SUGAR_BEET = "sugar-beet"
-    FORAGE_MAIZE = "forage-maize"
-    # Potatoes
-    POTATOES_MAINCROP = "potatoes-maincrop"
-    POTATOES_EARLY = "potatoes-early"
-    POTATOES_SEED = "potatoes-seed"
-    # Grassland
-    GRASS_GRAZED = "grass-grazed"
-    GRASS_SILAGE = "grass-silage"
-    GRASS_HAY = "grass-hay"
-    GRASS_GRAZED_ONE_CUT = "grass-grazed-one-cut"
-
 
 class PreviousCrop(Enum):
     """Previous crop categories for SNS determination."""

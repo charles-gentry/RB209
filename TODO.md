@@ -28,15 +28,14 @@ row; the ley details are already captured in the notes section.
 
 ---
 
-### 3. `Crop` and `CropCategory` enums are defined but never used
+### ~~3. `Crop` and `CropCategory` enums are defined but never used~~ ✓ Fixed
 
-**File:** `rb209/models.py:15-52`
+**Fixed in:** `rb209/models.py`, `rb209/engine.py`, `rb209/cli.py`
 
-The `Crop` enum (22 members) and `CropCategory` enum are defined and `Crop` is
-imported in `cli.py`, but neither is referenced anywhere in the codebase. The
-engine, CLI, and data modules all use plain string values for crop identification.
-These enums are dead code — either integrate them into the type signatures
-(replacing bare `str` crop parameters) or remove them.
+Removed the unused `Crop` and `CropCategory` enum definitions from `models.py`
+and their unused imports from `engine.py` and `cli.py`. The engine, CLI, and
+data modules all use validated plain string values for crop identification
+(checked against `CROP_INFO` keys), making the enums redundant dead code.
 
 ---
 
