@@ -5,6 +5,7 @@ from dataclasses import asdict
 
 from rb209.models import (
     LimeRecommendation,
+    NitrogenTimingResult,
     NutrientRecommendation,
     OrganicNutrients,
     SNSResult,
@@ -126,6 +127,25 @@ def format_lime(lime: LimeRecommendation, fmt: str = "table") -> str:
         ("Lime required", f"{lime.lime_required:.1f} t CaCO3/ha"),
     ]
     return _box("Lime Requirement", rows, lime.notes)
+
+
+# ── Nitrogen timing ─────────────────────────────────────────────────
+
+def format_timing(result: NitrogenTimingResult, fmt: str = "table") -> str:
+    if fmt == "json":
+        return json.dumps(asdict(result), indent=2)
+
+    rows = [("Total N", f"{result.total_n:.0f} kg/ha")]
+    for i, split in enumerate(result.splits, start=1):
+        label = f"Dressing {i}"
+        value = f"{split.amount:.0f} kg/ha — {split.timing}"
+        rows.append((label, value))
+
+    return _box(
+        f"N Timing — {result.crop}",
+        rows,
+        result.notes if result.notes else None,
+    )
 
 
 # ── Crop list ───────────────────────────────────────────────────────

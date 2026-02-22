@@ -165,3 +165,20 @@ class SNSResult:
     crop_n: float | None = None
     sns_value: float | None = None
     notes: list[str] = field(default_factory=list)
+
+
+@dataclass
+class NitrogenSplit:
+    """A single nitrogen dressing within a split schedule."""
+    amount: float   # kg N/ha
+    timing: str     # e.g. "GS30-31", "Mid-Feb to early Mar"
+    note: str = ""
+
+
+@dataclass
+class NitrogenTimingResult:
+    """Nitrogen split dressing advice for a crop."""
+    crop: str
+    total_n: float              # kg N/ha
+    splits: list[NitrogenSplit]
+    notes: list[str] = field(default_factory=list)

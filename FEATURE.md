@@ -492,7 +492,7 @@ test_no_combine_drill_warning_grassland
 
 ---
 
-## Phase 2 — Nitrogen Timing and Split Dressings
+## Phase 2 — Nitrogen Timing and Split Dressings ✓ IMPLEMENTED
 
 The highest-impact feature from FEATURE.md.  Adds a new `nitrogen_timing()`
 engine function and `timing` subcommand that, given a crop and total N, returns
@@ -500,6 +500,8 @@ split-dressing advice.
 
 **Priority:** High | **Complexity:** Medium | **RB209 Source:** S3 pp.14–15,
 S4 pp.26–31, S5 p.23
+
+**Status:** Complete — 86 new tests passing (252 total).
 
 ---
 

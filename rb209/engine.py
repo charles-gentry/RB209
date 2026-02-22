@@ -4,6 +4,8 @@ from rb209.models import (
     Crop,
     LimeRecommendation,
     NResidueCategory,
+    NitrogenSplit,
+    NitrogenTimingResult,
     NutrientRecommendation,
     OrganicMaterial,
     OrganicNutrients,
@@ -30,6 +32,7 @@ from rb209.data.potassium import (
 )
 from rb209.data.sns import GRASS_LEY_SNS_LOOKUP, SNS_LOOKUP, SNS_VALUE_TO_INDEX
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
+from rb209.data.timing import NITROGEN_TIMING_RULES
 
 
 def _validate_crop(crop: str) -> None:
@@ -524,6 +527,13 @@ def recommend_all(
             f"(current total: {n + k:.0f} kg/ha). Risk of seedling damage."
         )
 
+    # 2.6 Timing hint — direct users to the timing subcommand
+    if n > 0 and crop in NITROGEN_TIMING_RULES:
+        notes.append(
+            f"Run 'rb209 timing --crop {crop} --total-n {n:.0f}' for "
+            "N application timing guidance."
+        )
+
     return NutrientRecommendation(
         crop=info["name"],
         nitrogen=n,
@@ -531,6 +541,111 @@ def recommend_all(
         potassium=k,
         magnesium=mg,
         sulfur=s,
+        notes=notes,
+    )
+
+
+# ── Nitrogen timing ───────────────────────────────────────────────
+
+def nitrogen_timing(
+    crop: str,
+    total_n: float,
+    soil_type: str | None = None,
+) -> NitrogenTimingResult:
+    """Return nitrogen split dressing advice for a given crop and total N.
+
+    Args:
+        crop: Crop value string.
+        total_n: Total nitrogen recommendation (kg N/ha). Must be >= 0.
+        soil_type: Optional soil type (affects timing for some crops, e.g.
+            potatoes on light soils receive a split application).
+
+    Returns:
+        NitrogenTimingResult with split schedule and advisory notes.
+
+    Raises:
+        ValueError: If crop is unknown or total_n is negative.
+    """
+    _validate_crop(crop)
+
+    if total_n < 0:
+        raise ValueError(f"total_n must be non-negative, got {total_n}")
+
+    if soil_type is not None:
+        try:
+            SoilType(soil_type)
+        except ValueError:
+            valid = ", ".join(s.value for s in SoilType)
+            raise ValueError(
+                f"Unknown soil type '{soil_type}'. Valid options: {valid}"
+            )
+
+    crop_name = CROP_INFO[crop]["name"]
+    rules = NITROGEN_TIMING_RULES.get(crop)
+
+    if rules is None:
+        # No timing data for this crop — return a single full dressing with advisory.
+        split = NitrogenSplit(
+            amount=round(total_n),
+            timing="As a single dressing at the optimum time for the crop.",
+        )
+        return NitrogenTimingResult(
+            crop=crop_name,
+            total_n=total_n,
+            splits=[split],
+            notes=[
+                f"No specific timing guidance for {crop}. "
+                "Apply as a single dressing."
+            ],
+        )
+
+    # Find first matching rule.
+    matched_rule: dict | None = None
+    for rule in rules:
+        min_n = rule.get("min_n", 0)
+        max_n = rule.get("max_n", float("inf"))
+        if total_n < min_n or total_n > max_n:
+            continue
+        soil_cond = rule.get("soil_condition")
+        if soil_cond is not None and not soil_cond(soil_type):
+            continue
+        matched_rule = rule
+        break
+
+    if matched_rule is None:
+        # Fallback: apply all in one dressing (should not normally occur).
+        split = NitrogenSplit(
+            amount=round(total_n),
+            timing="As a single dressing at the optimum time for the crop.",
+        )
+        return NitrogenTimingResult(
+            crop=crop_name,
+            total_n=total_n,
+            splits=[split],
+            notes=[],
+        )
+
+    rule_splits = matched_rule["splits"]
+    notes: list[str] = list(matched_rule.get("notes", []))
+
+    # Compute dressing amounts from fractions.
+    amounts: list[int] = []
+    for i, s in enumerate(rule_splits):
+        if i < len(rule_splits) - 1:
+            amounts.append(round(s["fraction"] * total_n))
+        else:
+            # Last split gets the remainder to preserve the total.
+            amounts.append(round(total_n) - sum(amounts))
+
+    splits = [
+        NitrogenSplit(amount=float(amt), timing=s["timing"])
+        for amt, s in zip(amounts, rule_splits)
+    ]
+
+    return NitrogenTimingResult(
+        crop=crop_name,
+        total_n=total_n,
+        splits=splits,
         notes=notes,
     )
 

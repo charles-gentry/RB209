@@ -1,6 +1,6 @@
 # RB209 CLI Reference
 
-RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, lime, and organic materials.
+RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, lime, organic materials, and nitrogen application timing.
 
 The tool supports 22 crop types across arable, grassland, and potato categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
 
@@ -780,6 +780,104 @@ $ rb209 lime --current-ph 4.5 --target-ph 7.5 --soil-type heavy
 
 ---
 
+### timing
+
+Nitrogen application timing and split dressing advice for a crop.
+
+Given the total nitrogen recommendation (from `nitrogen` or `recommend`), the `timing` command returns a per-dressing schedule — how much N to apply and when — based on the crop type, total N rate, and optionally soil type.
+
+**Usage:**
+
+```
+rb209 timing --crop CROP --total-n RATE [--soil-type TYPE] [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
+| `--total-n` | Yes | float | >= 0 | -- | Total nitrogen recommendation (kg N/ha) |
+| `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type — affects timing for some crops (e.g. potatoes on light soils receive a split dressing) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (winter barley, split schedule):**
+
+```
+$ rb209 timing --crop winter-barley --total-n 180
+```
+
+Returns two equal dressings of 90 kg/ha: one at late tillering and one at GS30-31.
+
+**Example (potatoes, light soil — split by soil type):**
+
+```
+$ rb209 timing --crop potatoes-maincrop --total-n 270 --soil-type light
+```
+
+Returns two dressings: 180 kg/ha in the seedbed and 90 kg/ha post-emergence.
+
+**Example (JSON):**
+
+```
+$ rb209 timing --crop winter-wheat-feed --total-n 150 --format json
+```
+
+```json
+{
+  "crop": "Winter Wheat (feed)",
+  "total_n": 150.0,
+  "splits": [
+    {
+      "amount": 75.0,
+      "timing": "GS25-GS30 (February-March)",
+      "note": ""
+    },
+    {
+      "amount": 75.0,
+      "timing": "GS31-GS32 (late March-April)",
+      "note": ""
+    }
+  ],
+  "notes": []
+}
+```
+
+**JSON schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `crop` | string | Display name of the crop |
+| `total_n` | float | Total N as provided (kg/ha) |
+| `splits` | array | Ordered list of dressing objects |
+| `splits[].amount` | float | N to apply at this dressing (kg/ha) |
+| `splits[].timing` | string | When to apply (growth stage or calendar period) |
+| `splits[].note` | string | Optional dressing-specific note |
+| `notes` | string[] | General advisory notes (e.g. lodging risk, protein dressing) |
+
+**Notes:**
+- Split amounts are computed from per-crop fractions specified in RB209 Section 3 (grassland) and Section 4 (arable). The last dressing is adjusted so the amounts always sum exactly to `total_n` (rounded to the nearest integer).
+- Crops without specific timing guidance (`peas`, `field-beans`, `sugar-beet`, `forage-maize`, `linseed`, `oilseed-rape`) return a single dressing with a note that no specific timing data is available.
+- The `recommend` command adds a note directing you to the `timing` command whenever a crop has a timing schedule defined.
+
+**Timing schedules by crop:**
+
+| Crop | Rule | Source |
+|------|------|--------|
+| `winter-wheat-feed` | ≤120 kg/ha: single at GS25-GS30; >120: 50/50 at GS25-GS30 + GS31-GS32 | RB209 S4 |
+| `winter-wheat-milling` | Same splits; protein dressing note (GS32-GS39) always added | RB209 S4 |
+| `spring-wheat` | ≤100: single at drilling; >100: 50/50 at drilling + GS30-GS31 | RB209 S4 |
+| `winter-barley` | <100: single at GS30-31; 100–199: 50/50; ≥200: 40/40/20 with lodging note | RB209 S4 |
+| `spring-barley` | <100: single at drilling; ≥100: 33/67 at drilling + GS25-GS30 | RB209 S4 |
+| `winter-rye` | Same splits as `winter-wheat-feed`; lodging risk note always added | RB209 S4 |
+| `potatoes-maincrop/early/seed` | Light soil: 2/3 seedbed + 1/3 post-emergence; other: all in seedbed | RB209 S5 |
+| `grass-silage` | ≤80: single before 1st cut; 81–180: 2 dressings; 181–280: 3; ≥281: 4 per cut | RB209 S3 |
+| `grass-grazed` | ≤100: 2 rotations; 101–200: 3 rotations; ≥201: 5 rotations | RB209 S3 |
+| `grass-grazed-one-cut` | ≤120: 2 dressings (spring + after cut); >120: 3 dressings | RB209 S3 |
+| `grass-hay` | Single application (early February to mid-March) | RB209 S3 |
+
+---
+
 ### list-crops
 
 List available crop types.
@@ -1083,6 +1181,7 @@ Several commands add contextual advisory notes to their output alongside the num
 | Grassland crop with Mg Index 0 and K2O > 0 | Hypomagnesaemia (grass staggers) risk; avoid spring potash |
 | Grassland crop with `clover_risk` flag and N > 0 | Mineral N inhibits clover N fixation |
 | Arable crop on `light` soil with N + K2O > 150 kg/ha | Combine-drill seedbed limit warning |
+| N > 0 and crop has a timing schedule defined | Directs user to `rb209 timing` for N application timing guidance |
 
 **`lime` command notes (when lime is required):**
 

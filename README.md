@@ -9,6 +9,7 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 - Crop history support — `calculate_sns` accepts an optional `grass_history` parameter to automatically combine field-assessment and Table 4.6 results when the previous crop followed a grass ley (e.g. winter wheat after spring barley after a 2-year ley)
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for all major livestock manures and biosolids (RB209 Section 2 Tables 2.3, 2.6, 2.9, 2.12, 2.15)
 - Contextual advisory notes — NVZ N-max warnings, potash split advice for potatoes and grass silage, hypomagnesaemia risk on grassland, clover N-fixation inhibition, over-liming trace-element warnings, combine-drill seedbed limit on sandy soils, and lime-before-potatoes common scab risk
+- **Nitrogen application timing** — `timing` command returns per-dressing schedule and amounts for all major crop types, taking into account the total N rate (single vs split dressings) and soil type (e.g. potatoes on light soils)
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies
 
@@ -92,6 +93,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `phosphorus` | Phosphorus recommendation only |
 | `potassium` | Potassium recommendation only (with straw management options) |
 | `sulfur` | Sulfur recommendation only |
+| `timing` | Nitrogen application timing and dressing schedule for a crop |
 | `sns` | Calculate SNS index from field assessment (Tables 4.3–4.5) |
 | `sns-smn` | Calculate SNS index from direct soil mineral N measurement |
 | `sns-ley` | Calculate SNS index from grass ley history (Table 4.6) |
