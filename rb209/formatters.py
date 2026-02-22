@@ -110,7 +110,7 @@ def format_organic(org: OrganicNutrients, fmt: str = "table") -> str:
         ("MgO", f"{org.mgo:.1f} kg/ha"),
         ("SO3", f"{org.so3:.1f} kg/ha"),
     ]
-    return _box(f"Organic Nutrients — {org.material}", rows)
+    return _box(f"Organic Nutrients — {org.material}", rows, org.notes)
 
 
 # ── Lime ────────────────────────────────────────────────────────────

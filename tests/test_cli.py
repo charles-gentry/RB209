@@ -211,5 +211,21 @@ class TestCLIVersion(unittest.TestCase):
         self.assertIn("0.1.0", result.stdout)
 
 
+class TestCLILimeCrop(unittest.TestCase):
+    def test_lime_with_crop_potato_shows_scab_warning(self):
+        result = _run_cli(
+            "lime",
+            "--current-ph", "5.5",
+            "--target-ph", "6.5",
+            "--soil-type", "medium",
+            "--crop", "potatoes-maincrop",
+        )
+        self.assertEqual(result.returncode, 0)
+        # The formatter may wrap "common scab" across lines; check both words present
+        stdout_lower = result.stdout.lower()
+        self.assertIn("common", stdout_lower)
+        self.assertIn("scab", stdout_lower)
+
+
 if __name__ == "__main__":
     unittest.main()

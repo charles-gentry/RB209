@@ -211,6 +211,28 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
 # Where a crop has soil-specific data, this table takes precedence
 # over the generic NITROGEN_RECOMMENDATIONS when soil_type is given.
 
+# NVZ whole-farm N-max limits by crop group (kg N/ha).
+# Source: RB209 Table 4.17 footnote "a", Defra NVZ guidance.
+NVZ_NMAX: dict[str, float] = {
+    "winter-wheat-feed": 220,
+    "winter-wheat-milling": 220,
+    "spring-wheat": 220,
+    "winter-barley": 220,
+    "spring-barley": 220,
+    "winter-oats": 220,
+    "spring-oats": 220,
+    "winter-rye": 220,
+    "winter-oilseed-rape": 250,
+    "spring-oilseed-rape": 250,
+    "grass-grazed": 300,
+    "grass-silage": 300,
+    "grass-hay": 300,
+    "grass-grazed-one-cut": 300,
+    "potatoes-maincrop": 270,
+    "potatoes-early": 270,
+    "potatoes-seed": 270,
+}
+
 NITROGEN_SOIL_SPECIFIC: dict[tuple[str, int, str], float] = {
     # Table 4.17: Winter wheat (feed) — light sand soils
     ("winter-wheat-feed", 0, "light"): 180,

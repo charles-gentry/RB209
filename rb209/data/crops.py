@@ -113,24 +113,28 @@ CROP_INFO: dict[str, dict] = {
         "name": "Grass (grazed only)",
         "category": "grassland",
         "has_straw_option": False,
+        "clover_risk": True,
         "notes": "Recommendations assume moderate stocking rate. N recycled via grazing.",
     },
     "grass-silage": {
         "name": "Grass (silage, multi-cut)",
         "category": "grassland",
         "has_straw_option": False,
+        "clover_risk": True,
         "notes": "Multi-cut silage system. High nutrient offtake.",
     },
     "grass-hay": {
         "name": "Grass (hay)",
         "category": "grassland",
         "has_straw_option": False,
+        "clover_risk": True,
         "notes": "Single hay cut. Moderate nutrient offtake.",
     },
     "grass-grazed-one-cut": {
         "name": "Grass (grazed + 1 silage cut)",
         "category": "grassland",
         "has_straw_option": False,
+        "clover_risk": True,
         "notes": "Mixed grazing and cutting system.",
     },
 }

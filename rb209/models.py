@@ -140,6 +140,7 @@ class OrganicNutrients:
     k2o: float             # kg/ha
     mgo: float             # kg/ha
     so3: float             # kg/ha
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass

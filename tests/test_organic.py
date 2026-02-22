@@ -49,6 +49,16 @@ class TestOrganic(unittest.TestCase):
         self.assertAlmostEqual(result.available_n, 8.0)
         self.assertGreater(result.total_n, result.available_n)
 
+    def test_organic_notes_field_exists(self):
+        result = calculate_organic("cattle-fym", 25)
+        self.assertTrue(hasattr(result, "notes"))
+        self.assertIsInstance(result.notes, list)
+
+    def test_organic_condition_warning_present(self):
+        result = calculate_organic("cattle-fym", 25)
+        combined = " ".join(result.notes)
+        self.assertIn("waterlogged", combined)
+
 
 if __name__ == "__main__":
     unittest.main()
