@@ -5,7 +5,7 @@ describes but that the tool does not yet surface (or surfaces only partially).
 Organised into four phases by dependency order and priority.  Each feature
 specifies the files to change, the implementation steps, and the tests to write.
 
-**Baseline:** 166 tests passing, 0 failures.
+**Baseline:** 166 tests passing, 0 failures. **Current:** 309 tests passing.
 
 ---
 
@@ -919,11 +919,13 @@ test_nitrogen_with_expected_yield
 
 ---
 
-## Phase 4 — Economic Break-Even Ratio
+## Phase 4 — Economic Break-Even Ratio ✓ IMPLEMENTED
 
 Add an optional `--ber` parameter for wheat and barley N recommendations.
 
 **Priority:** Low | **Complexity:** Medium | **RB209 Source:** S4 Tables 4.25–4.26
+
+**Status:** Complete — 28 new tests passing (309 total).
 
 ---
 
@@ -1102,11 +1104,10 @@ order (data → model → engine → formatter → CLI → tests).
 | 2 | `test_cli.py` | (timing integration) | 3 |
 | 3 | `test_yield.py` (new) | 3 classes | ~12 |
 | 3 | `test_cli.py` | (yield integration) | 2 |
-| 4 | `test_ber.py` (new) | 1 class | ~9 |
-| 4 | `test_cli.py` | (BER integration) | 2 |
-| **Total** | | | **~84 new tests** |
+| 4 | `test_ber.py` (new) | 5 classes | 28 |
+| **Total** | | | **~115 new tests** |
 
-Combined with the existing 166 tests, the full suite should reach ~250 tests.
+Combined with the existing 166 tests, the full suite now has 309 tests.
 
 ---
 

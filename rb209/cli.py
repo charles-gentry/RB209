@@ -55,6 +55,7 @@ def _add_format_arg(parser: argparse.ArgumentParser) -> None:
 def _handle_recommend(args: argparse.Namespace) -> None:
     soil = getattr(args, "soil_type", None)
     expected_yield = getattr(args, "expected_yield", None)
+    ber = getattr(args, "ber", None)
     rec = recommend_all(
         crop=args.crop,
         sns_index=args.sns_index,
@@ -64,6 +65,7 @@ def _handle_recommend(args: argparse.Namespace) -> None:
         straw_removed=args.straw_removed,
         soil_type=soil,
         expected_yield=expected_yield,
+        ber=ber,
     )
     print(format_recommendation(rec, args.output_format))
 
@@ -71,7 +73,8 @@ def _handle_recommend(args: argparse.Namespace) -> None:
 def _handle_nitrogen(args: argparse.Namespace) -> None:
     soil = getattr(args, "soil_type", None)
     expected_yield = getattr(args, "expected_yield", None)
-    value = recommend_nitrogen(args.crop, args.sns_index, soil_type=soil, expected_yield=expected_yield)
+    ber = getattr(args, "ber", None)
+    value = recommend_nitrogen(args.crop, args.sns_index, soil_type=soil, expected_yield=expected_yield, ber=ber)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Nitrogen (N)", "kg/ha", value, args.output_format))
 
@@ -236,6 +239,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--expected-yield", type=float, default=None,
                         metavar="t/ha",
                         help="Expected yield (t/ha) for yield-adjusted recommendations")
+    p_rec.add_argument("--ber", type=float, default=None,
+                        help=(
+                            "Break-even ratio (fertiliser N cost £/kg ÷ grain "
+                            "value £/kg). Default: 5.0. Only affects wheat and "
+                            "barley N recommendations."
+                        ))
     _add_format_arg(p_rec)
     p_rec.set_defaults(func=_handle_recommend)
 
@@ -251,6 +260,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_n.add_argument("--expected-yield", type=float, default=None,
                       metavar="t/ha",
                       help="Expected yield (t/ha) for yield-adjusted N recommendation")
+    p_n.add_argument("--ber", type=float, default=None,
+                      help=(
+                          "Break-even ratio (fertiliser N cost £/kg ÷ grain "
+                          "value £/kg). Default: 5.0. Only affects wheat and "
+                          "barley N recommendations."
+                      ))
     _add_format_arg(p_n)
     p_n.set_defaults(func=_handle_nitrogen)
 

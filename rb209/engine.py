@@ -33,6 +33,7 @@ from rb209.data.potassium import (
 from rb209.data.sns import GRASS_LEY_SNS_LOOKUP, SNS_LOOKUP, SNS_VALUE_TO_INDEX
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
+from rb209.data.ber import BER_ADJUSTMENTS, CROP_BER_GROUP
 from rb209.data.yield_adjustments import YIELD_ADJUSTMENTS
 
 
@@ -328,6 +329,37 @@ def combine_sns(*results: SNSResult) -> SNSResult:
     return max(results, key=lambda r: r.sns_index)
 
 
+# ── BER interpolation ──────────────────────────────────────────────
+
+def _interpolate_ber(group: str, ber: float) -> float:
+    """Linearly interpolate a BER adjustment for the given crop group.
+
+    Extrapolates (clamped) at the table boundaries.
+    """
+    # Collect all BER values for this group, sorted.
+    points = sorted(
+        (b, adj) for (g, b), adj in BER_ADJUSTMENTS.items() if g == group
+    )
+    if not points:
+        return 0.0
+
+    # Clamp to table boundaries.
+    if ber <= points[0][0]:
+        return points[0][1]
+    if ber >= points[-1][0]:
+        return points[-1][1]
+
+    # Find the two surrounding points and interpolate.
+    for i in range(len(points) - 1):
+        b_lo, adj_lo = points[i]
+        b_hi, adj_hi = points[i + 1]
+        if b_lo <= ber <= b_hi:
+            frac = (ber - b_lo) / (b_hi - b_lo)
+            return adj_lo + frac * (adj_hi - adj_lo)
+
+    return 0.0  # pragma: no cover
+
+
 # ── Nitrogen ────────────────────────────────────────────────────────
 
 def recommend_nitrogen(
@@ -335,6 +367,7 @@ def recommend_nitrogen(
     sns_index: int,
     soil_type: str | None = None,
     expected_yield: float | None = None,
+    ber: float | None = None,
 ) -> float:
     """Return nitrogen recommendation in kg N/ha.
 
@@ -347,6 +380,9 @@ def recommend_nitrogen(
         expected_yield: Optional expected yield in t/ha. When provided and the
             crop has yield adjustment data, adjusts the recommendation based on
             the difference from the baseline yield.
+        ber: Optional break-even ratio (fertiliser N cost £/kg ÷ grain value
+            £/kg). Default is 5.0 (no adjustment). Only applies to wheat and
+            barley crops.
     """
     _validate_crop(crop)
     _validate_index("SNS index", sns_index, 0, 6)
@@ -385,6 +421,12 @@ def recommend_nitrogen(
         capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
         delta = (capped_yield - adj["baseline_yield"]) * adj["n_adjust_per_t"]
         base = max(0.0, base + delta)
+
+    if ber is not None:
+        group = CROP_BER_GROUP.get(crop)
+        if group is not None:
+            ber_adj = _interpolate_ber(group, ber)
+            base = max(0.0, base + ber_adj)
 
     return base
 
@@ -521,6 +563,7 @@ def recommend_all(
     straw_removed: bool = True,
     soil_type: str | None = None,
     expected_yield: float | None = None,
+    ber: float | None = None,
 ) -> NutrientRecommendation:
     """Return a full nutrient recommendation for a crop.
 
@@ -534,10 +577,11 @@ def recommend_all(
         soil_type: Optional soil type for soil-specific N recommendations.
         expected_yield: Optional expected yield in t/ha for yield-adjusted
             recommendations.
+        ber: Optional break-even ratio for cereal N adjustment.
     """
     _validate_crop(crop)
 
-    n = recommend_nitrogen(crop, sns_index, soil_type, expected_yield=expected_yield)
+    n = recommend_nitrogen(crop, sns_index, soil_type, expected_yield=expected_yield, ber=ber)
     p = recommend_phosphorus(crop, p_index, expected_yield=expected_yield)
     k = recommend_potassium(crop, k_index, straw_removed, expected_yield=expected_yield)
     mg = recommend_magnesium(mg_index)
@@ -607,6 +651,14 @@ def recommend_all(
         notes.append(
             f"Recommendations adjusted for expected yield of {capped_yield:.1f} t/ha "
             f"(baseline: {adj['baseline_yield']:.1f} t/ha)."
+        )
+
+    # 4.2 BER adjustment note
+    if ber is not None and crop in CROP_BER_GROUP:
+        ber_adj = _interpolate_ber(CROP_BER_GROUP[crop], ber)
+        notes.append(
+            f"N adjusted for break-even ratio {ber:.1f} "
+            f"({ber_adj:+.0f} kg/ha from default BER 5.0)."
         )
 
     # 2.6 Timing hint — direct users to the timing subcommand
