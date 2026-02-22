@@ -117,6 +117,7 @@ rb209 recommend --crop CROP --sns-index N --p-index N --k-index N [options]
 | `--straw-removed` | No | flag | -- | true | Straw removed from field (cereals only; mutually exclusive with `--straw-incorporated`) |
 | `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
+| `--ber` | No | float | any positive value | -- | Break-even ratio (fertiliser N cost £/kg ÷ grain value £/kg). Default: 5.0. Only affects wheat and barley N recommendations. Values between table entries are linearly interpolated. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
@@ -172,6 +173,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 - The `--mg-index` defaults to 2 (target index). At index 2 or above, MgO recommendation is 0.
 - P, K, and Mg indices above 4 are clamped to 4, which returns 0 kg/ha for all three nutrients.
 - The `notes` array in the output may include contextual advisory notes beyond the basic crop note. See [Contextual Advisory Notes](#contextual-advisory-notes) for the full list of notes that can appear.
+- The `--ber` option adjusts the N recommendation for wheat and barley crops based on the economic break-even ratio (BER = fertiliser N cost £/kg ÷ grain value £/kg). The default BER is 5.0 (no adjustment). Lower BER values (cheap fertiliser relative to grain) increase the N recommendation; higher BER values decrease it. BER values between the table entries (2, 3, 4, 5, 6, 7, 8, 10) are linearly interpolated. For non-cereal crops, `--ber` is accepted but has no effect.
 
 ---
 
@@ -192,6 +194,7 @@ rb209 nitrogen --crop CROP --sns-index N [--format FORMAT]
 | `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
 | `--sns-index` | Yes | int | `0` to `6` | -- | Soil Nitrogen Supply index |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
+| `--ber` | No | float | any positive value | -- | Break-even ratio (fertiliser N cost £/kg ÷ grain value £/kg). Default: 5.0. Only affects wheat and barley. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
@@ -1154,6 +1157,23 @@ A higher SNS index means more nitrogen is already available in the soil, so less
 
 This calculation is also available as the [`sns-ley`](#sns-ley) CLI subcommand. Compare the result with the `sns` command output and take the higher index.
 
+### Break-Even Ratio (BER)
+
+The break-even ratio (BER) is the ratio of fertiliser nitrogen cost (£/kg N) to grain value (£/kg). It captures the economic trade-off between the cost of applying more nitrogen and the value of the extra grain produced. RB209 Tables 4.25 (wheat) and 4.26 (barley) provide N adjustments relative to a default BER of 5.0:
+
+| BER | Wheat adjustment | Barley adjustment |
+|-----|-----------------|-------------------|
+| 2.0 | +30 kg/ha | +25 kg/ha |
+| 3.0 | +20 kg/ha | +15 kg/ha |
+| 4.0 | +10 kg/ha | +10 kg/ha |
+| 5.0 | 0 (default) | 0 (default) |
+| 6.0 | -10 kg/ha | -10 kg/ha |
+| 7.0 | -15 kg/ha | -15 kg/ha |
+| 8.0 | -20 kg/ha | -20 kg/ha |
+| 10.0 | -30 kg/ha | -25 kg/ha |
+
+When `--ber` is passed to `recommend` or `nitrogen`, the adjustment for the crop's BER group (wheat or barley) is linearly interpolated from the table above and added to the N recommendation. Values outside the 2.0–10.0 range are clamped to the nearest boundary. Non-cereal crops are not affected.
+
 ### Straw Management
 
 For cereal crops (wheat, barley, oats, rye), the potassium recommendation depends on whether straw is removed from the field or incorporated back into the soil. Straw contains potassium, so:
@@ -1181,6 +1201,7 @@ Several commands add contextual advisory notes to their output alongside the num
 | Grassland crop with Mg Index 0 and K2O > 0 | Hypomagnesaemia (grass staggers) risk; avoid spring potash |
 | Grassland crop with `clover_risk` flag and N > 0 | Mineral N inhibits clover N fixation |
 | Arable crop on `light` soil with N + K2O > 150 kg/ha | Combine-drill seedbed limit warning |
+| `--ber` provided and crop is wheat or barley | N adjusted for break-even ratio with adjustment from default BER 5.0 |
 | N > 0 and crop has a timing schedule defined | Directs user to `rb209 timing` for N application timing guidance |
 
 **`lime` command notes (when lime is required):**

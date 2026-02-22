@@ -10,6 +10,7 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for all major livestock manures and biosolids (RB209 Section 2 Tables 2.3, 2.6, 2.9, 2.12, 2.15)
 - Contextual advisory notes — NVZ N-max warnings, potash split advice for potatoes and grass silage, hypomagnesaemia risk on grassland, clover N-fixation inhibition, over-liming trace-element warnings, combine-drill seedbed limit on sandy soils, and lime-before-potatoes common scab risk
 - **Nitrogen application timing** — `timing` command returns per-dressing schedule and amounts for all major crop types, taking into account the total N rate (single vs split dressings) and soil type (e.g. potatoes on light soils)
+- **Break-even ratio (BER) adjustment** — optional `--ber` flag on `recommend` and `nitrogen` commands adjusts cereal N recommendations based on the fertiliser cost to grain price ratio (RB209 Tables 4.25–4.26), with linear interpolation between table values
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies
 
