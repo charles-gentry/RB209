@@ -374,7 +374,13 @@ def recommend_nitrogen(
             raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
         base = NITROGEN_RECOMMENDATIONS[key]
 
-    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+    if expected_yield is not None:
+        if crop not in YIELD_ADJUSTMENTS:
+            valid = ", ".join(sorted(YIELD_ADJUSTMENTS))
+            raise ValueError(
+                f"No yield adjustment data for crop '{crop}'. "
+                f"Supported crops: {valid}"
+            )
         adj = YIELD_ADJUSTMENTS[crop]
         capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
         delta = (capped_yield - adj["baseline_yield"]) * adj["n_adjust_per_t"]
@@ -408,7 +414,13 @@ def recommend_phosphorus(
         raise ValueError(f"No phosphorus data for crop '{crop}'")
     base = PHOSPHORUS_RECOMMENDATIONS[key]
 
-    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+    if expected_yield is not None:
+        if crop not in YIELD_ADJUSTMENTS:
+            valid = ", ".join(sorted(YIELD_ADJUSTMENTS))
+            raise ValueError(
+                f"No yield adjustment data for crop '{crop}'. "
+                f"Supported crops: {valid}"
+            )
         adj = YIELD_ADJUSTMENTS[crop]
         capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
         delta = (capped_yield - adj["baseline_yield"]) * adj["p_adjust_per_t"]
@@ -456,7 +468,13 @@ def recommend_potassium(
     else:
         raise ValueError(f"No potassium data for crop '{crop}'")
 
-    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+    if expected_yield is not None:
+        if crop not in YIELD_ADJUSTMENTS:
+            valid = ", ".join(sorted(YIELD_ADJUSTMENTS))
+            raise ValueError(
+                f"No yield adjustment data for crop '{crop}'. "
+                f"Supported crops: {valid}"
+            )
         adj = YIELD_ADJUSTMENTS[crop]
         capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
         delta = (capped_yield - adj["baseline_yield"]) * adj["k_adjust_per_t"]

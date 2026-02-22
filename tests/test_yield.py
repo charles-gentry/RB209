@@ -44,10 +44,11 @@ class TestYieldAdjustmentNitrogen(unittest.TestCase):
         result = recommend_nitrogen("winter-wheat-feed", 2)
         self.assertEqual(result, 150)
 
-    def test_crop_without_yield_data_returns_base(self):
-        # linseed has no yield adjustment data
-        result = recommend_nitrogen("linseed", 2, expected_yield=5.0)
-        self.assertEqual(result, 40)
+    def test_crop_without_yield_data_raises(self):
+        # linseed has no yield adjustment data — must raise, not silently ignore
+        with self.assertRaises(ValueError) as ctx:
+            recommend_nitrogen("linseed", 2, expected_yield=5.0)
+        self.assertIn("linseed", str(ctx.exception))
 
     def test_result_clamped_to_zero(self):
         # base 40 + (4.0 - 8.0) × 20 = -40 → 0
@@ -97,10 +98,10 @@ class TestYieldAdjustmentPhosphorus(unittest.TestCase):
         result = recommend_phosphorus("winter-wheat-feed", 2)
         self.assertEqual(result, 60)
 
-    def test_crop_without_yield_data_returns_base(self):
-        base = recommend_phosphorus("linseed", 2)
-        result = recommend_phosphorus("linseed", 2, expected_yield=5.0)
-        self.assertEqual(base, result)
+    def test_crop_without_yield_data_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            recommend_phosphorus("linseed", 2, expected_yield=5.0)
+        self.assertIn("linseed", str(ctx.exception))
 
 
 class TestYieldAdjustmentFull(unittest.TestCase):
@@ -135,10 +136,17 @@ class TestYieldAdjustmentFull(unittest.TestCase):
         for note in rec.notes:
             self.assertNotIn("baseline", note.lower())
 
-    def test_recommend_all_crop_without_yield_data_no_note(self):
-        rec = recommend_all("linseed", 2, 2, 1, expected_yield=5.0)
-        for note in rec.notes:
-            self.assertNotIn("baseline", note.lower())
+    def test_recommend_all_crop_without_yield_data_raises(self):
+        with self.assertRaises(ValueError) as ctx:
+            recommend_all("linseed", 2, 2, 1, expected_yield=5.0)
+        self.assertIn("linseed", str(ctx.exception))
+
+    def test_error_message_lists_supported_crops(self):
+        with self.assertRaises(ValueError) as ctx:
+            recommend_nitrogen("spring-barley", 2, expected_yield=5.0)
+        msg = str(ctx.exception)
+        self.assertIn("spring-barley", msg)
+        self.assertIn("winter-wheat-feed", msg)
 
 
 class TestYieldAdjustmentCLI(unittest.TestCase):
@@ -197,6 +205,16 @@ class TestYieldAdjustmentCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         data = json.loads(result.stdout)
         self.assertEqual(data["nitrogen"], 190)
+
+    def test_unsupported_crop_exits_nonzero(self):
+        result = _run_cli(
+            "nitrogen",
+            "--crop", "linseed",
+            "--sns-index", "2",
+            "--expected-yield", "5",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("linseed", result.stderr)
 
 
 if __name__ == "__main__":
