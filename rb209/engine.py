@@ -33,6 +33,7 @@ from rb209.data.potassium import (
 from rb209.data.sns import GRASS_LEY_SNS_LOOKUP, SNS_LOOKUP, SNS_VALUE_TO_INDEX
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
+from rb209.data.yield_adjustments import YIELD_ADJUSTMENTS
 
 
 def _validate_crop(crop: str) -> None:
@@ -330,7 +331,10 @@ def combine_sns(*results: SNSResult) -> SNSResult:
 # ── Nitrogen ────────────────────────────────────────────────────────
 
 def recommend_nitrogen(
-    crop: str, sns_index: int, soil_type: str | None = None
+    crop: str,
+    sns_index: int,
+    soil_type: str | None = None,
+    expected_yield: float | None = None,
 ) -> float:
     """Return nitrogen recommendation in kg N/ha.
 
@@ -340,6 +344,9 @@ def recommend_nitrogen(
         soil_type: Optional soil type for soil-specific recommendations.
             When provided, uses Table 4.17 (and similar) soil-specific data.
             When omitted, uses the generic recommendation table.
+        expected_yield: Optional expected yield in t/ha. When provided and the
+            crop has yield adjustment data, adjusts the recommendation based on
+            the difference from the baseline yield.
     """
     _validate_crop(crop)
     _validate_index("SNS index", sns_index, 0, 6)
@@ -354,23 +361,43 @@ def recommend_nitrogen(
             )
         soil_key = (crop, sns_index, soil_type)
         if soil_key in NITROGEN_SOIL_SPECIFIC:
-            return NITROGEN_SOIL_SPECIFIC[soil_key]
-        # No soil-specific table for this crop; fall back to generic table.
+            base = NITROGEN_SOIL_SPECIFIC[soil_key]
+        else:
+            # No soil-specific table for this crop; fall back to generic table.
+            key = (crop, sns_index)
+            if key not in NITROGEN_RECOMMENDATIONS:
+                raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
+            base = NITROGEN_RECOMMENDATIONS[key]
+    else:
+        key = (crop, sns_index)
+        if key not in NITROGEN_RECOMMENDATIONS:
+            raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
+        base = NITROGEN_RECOMMENDATIONS[key]
 
-    key = (crop, sns_index)
-    if key not in NITROGEN_RECOMMENDATIONS:
-        raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
-    return NITROGEN_RECOMMENDATIONS[key]
+    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+        adj = YIELD_ADJUSTMENTS[crop]
+        capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
+        delta = (capped_yield - adj["baseline_yield"]) * adj["n_adjust_per_t"]
+        base = max(0.0, base + delta)
+
+    return base
 
 
 # ── Phosphorus ──────────────────────────────────────────────────────
 
-def recommend_phosphorus(crop: str, p_index: int) -> float:
+def recommend_phosphorus(
+    crop: str,
+    p_index: int,
+    expected_yield: float | None = None,
+) -> float:
     """Return phosphorus recommendation in kg P2O5/ha.
 
     Args:
         crop: Crop value string.
         p_index: Soil P index (0-9, clamped to max available key).
+        expected_yield: Optional expected yield in t/ha. When provided and the
+            crop has yield adjustment data, adjusts the recommendation based on
+            the difference from the baseline yield.
     """
     _validate_crop(crop)
     _validate_index("P index", p_index, 0, 9)
@@ -379,13 +406,24 @@ def recommend_phosphorus(crop: str, p_index: int) -> float:
     key = (crop, clamped)
     if key not in PHOSPHORUS_RECOMMENDATIONS:
         raise ValueError(f"No phosphorus data for crop '{crop}'")
-    return PHOSPHORUS_RECOMMENDATIONS[key]
+    base = PHOSPHORUS_RECOMMENDATIONS[key]
+
+    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+        adj = YIELD_ADJUSTMENTS[crop]
+        capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
+        delta = (capped_yield - adj["baseline_yield"]) * adj["p_adjust_per_t"]
+        base = max(0.0, base + delta)
+
+    return base
 
 
 # ── Potassium ───────────────────────────────────────────────────────
 
 def recommend_potassium(
-    crop: str, k_index: int, straw_removed: bool = True
+    crop: str,
+    k_index: int,
+    straw_removed: bool = True,
+    expected_yield: float | None = None,
 ) -> float:
     """Return potassium recommendation in kg K2O/ha.
 
@@ -393,6 +431,9 @@ def recommend_potassium(
         crop: Crop value string.
         k_index: Soil K index (0-9, clamped to max available key).
         straw_removed: For cereals only — True if straw is removed.
+        expected_yield: Optional expected yield in t/ha. When provided and the
+            crop has yield adjustment data, adjusts the recommendation based on
+            the difference from the baseline yield.
     """
     _validate_crop(crop)
     _validate_index("K index", k_index, 0, 9)
@@ -405,12 +446,23 @@ def recommend_potassium(
     if info.get("has_straw_option"):
         table = POTASSIUM_STRAW_REMOVED if straw_removed else POTASSIUM_STRAW_INCORPORATED
         if key in table:
-            return table[key]
+            base = table[key]
+        elif key in POTASSIUM_RECOMMENDATIONS:
+            base = POTASSIUM_RECOMMENDATIONS[key]
+        else:
+            raise ValueError(f"No potassium data for crop '{crop}'")
+    elif key in POTASSIUM_RECOMMENDATIONS:
+        base = POTASSIUM_RECOMMENDATIONS[key]
+    else:
+        raise ValueError(f"No potassium data for crop '{crop}'")
 
-    if key in POTASSIUM_RECOMMENDATIONS:
-        return POTASSIUM_RECOMMENDATIONS[key]
+    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+        adj = YIELD_ADJUSTMENTS[crop]
+        capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
+        delta = (capped_yield - adj["baseline_yield"]) * adj["k_adjust_per_t"]
+        base = max(0.0, base + delta)
 
-    raise ValueError(f"No potassium data for crop '{crop}'")
+    return base
 
 
 # ── Magnesium ───────────────────────────────────────────────────────
@@ -450,6 +502,7 @@ def recommend_all(
     mg_index: int = 2,
     straw_removed: bool = True,
     soil_type: str | None = None,
+    expected_yield: float | None = None,
 ) -> NutrientRecommendation:
     """Return a full nutrient recommendation for a crop.
 
@@ -461,12 +514,14 @@ def recommend_all(
         mg_index: Soil Mg index (0-9). Defaults to 2 (target).
         straw_removed: For cereals — True if straw removed.
         soil_type: Optional soil type for soil-specific N recommendations.
+        expected_yield: Optional expected yield in t/ha for yield-adjusted
+            recommendations.
     """
     _validate_crop(crop)
 
-    n = recommend_nitrogen(crop, sns_index, soil_type)
-    p = recommend_phosphorus(crop, p_index)
-    k = recommend_potassium(crop, k_index, straw_removed)
+    n = recommend_nitrogen(crop, sns_index, soil_type, expected_yield=expected_yield)
+    p = recommend_phosphorus(crop, p_index, expected_yield=expected_yield)
+    k = recommend_potassium(crop, k_index, straw_removed, expected_yield=expected_yield)
     mg = recommend_magnesium(mg_index)
     s = recommend_sulfur(crop)
 
@@ -525,6 +580,15 @@ def recommend_all(
         notes.append(
             f"On sandy soils, do not combine-drill more than 150 kg/ha of N + K2O "
             f"(current total: {n + k:.0f} kg/ha). Risk of seedling damage."
+        )
+
+    # 3.2 Yield adjustment note
+    if expected_yield is not None and crop in YIELD_ADJUSTMENTS:
+        adj = YIELD_ADJUSTMENTS[crop]
+        capped_yield = min(expected_yield, adj["max_yield"]) if "max_yield" in adj else expected_yield
+        notes.append(
+            f"Recommendations adjusted for expected yield of {capped_yield:.1f} t/ha "
+            f"(baseline: {adj['baseline_yield']:.1f} t/ha)."
         )
 
     # 2.6 Timing hint — direct users to the timing subcommand
