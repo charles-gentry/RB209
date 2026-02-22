@@ -16,7 +16,7 @@ from rb209.models import (
 from rb209.data.crops import CROP_INFO
 from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION, MIN_PH_FOR_LIMING, TARGET_PH
 from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS
-from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC
+from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC, NVZ_NMAX
 from rb209.data.organic import (
     ORGANIC_MATERIAL_INFO,
     ORGANIC_N_TIMING_FACTORS,
@@ -480,6 +480,50 @@ def recommend_all(
     if n == 0 and crop in ("peas", "field-beans"):
         notes.append("N-fixing crop: no fertiliser nitrogen required.")
 
+    # 1.1 NVZ N-max warning
+    if crop in NVZ_NMAX and n > NVZ_NMAX[crop]:
+        limit = NVZ_NMAX[crop]
+        notes.append(
+            f"N recommendation ({n:.0f} kg/ha) exceeds the NVZ N-max limit "
+            f"({limit:.0f} kg/ha) for this crop type. "
+            "The N-max applies as a whole-farm average."
+        )
+
+    # 1.2 Potash split warning for potatoes
+    if crop.startswith("potatoes-") and k > 300:
+        notes.append(
+            f"K2O recommendation ({k:.0f} kg/ha) exceeds 300 kg/ha. "
+            "Apply half in late autumn/winter and half in spring."
+        )
+
+    # 1.3 Potash split warning for grass silage
+    if crop == "grass-silage" and k > 90:
+        notes.append(
+            "Limit spring K2O application for 1st cut to 80-90 kg/ha "
+            "to minimise luxury uptake. Apply balance in previous autumn."
+        )
+
+    # 1.6 Hypomagnesaemia warning for grassland at Mg Index 0
+    if info["category"] == "grassland" and mg_index == 0 and k > 0:
+        notes.append(
+            "Mg Index 0 on grassland: risk of hypomagnesaemia (grass staggers). "
+            "Avoid applying potash in spring. Apply 50-100 kg MgO/ha every 3-4 years."
+        )
+
+    # 1.7 Clover N-fixation inhibition warning
+    if info.get("clover_risk") and n > 0:
+        notes.append(
+            "Mineral N inhibits clover N fixation. If the sward contains "
+            "significant clover, reduce or omit N applications."
+        )
+
+    # 1.9 Seedbed N+K2O combine-drill limit for light soils
+    if soil_type == "light" and (n + k) > 150 and info["category"] == "arable":
+        notes.append(
+            f"On sandy soils, do not combine-drill more than 150 kg/ha of N + K2O "
+            f"(current total: {n + k:.0f} kg/ha). Risk of seedling damage."
+        )
+
     return NutrientRecommendation(
         crop=info["name"],
         nitrogen=n,
@@ -552,6 +596,12 @@ def calculate_organic(
     else:
         available_n = round(info["available_n"] * rate, 1)
 
+    # 1.8 Organic application condition warning
+    organic_notes = [
+        "Do not apply organic materials to soils that are waterlogged, frozen hard, "
+        "snow-covered, or deeply cracked."
+    ]
+
     return OrganicNutrients(
         material=info["name"],
         rate=rate,
@@ -562,6 +612,7 @@ def calculate_organic(
         k2o=round(info["k2o"] * rate, 1),
         mgo=round(info["mgo"] * rate, 1),
         so3=round(info["so3"] * rate, 1),
+        notes=organic_notes,
     )
 
 
@@ -572,6 +623,7 @@ def calculate_lime(
     target_ph: float | None,
     soil_type: str,
     land_use: str | None = None,
+    crop: str | None = None,
 ) -> LimeRecommendation:
     """Calculate lime requirement.
 
@@ -591,6 +643,8 @@ def calculate_lime(
         land_use: Land use category for automatic target pH selection:
             "arable" (default target 6.5) or "grassland" (default target 6.0).
             Required when ``target_ph`` is ``None``; ignored otherwise.
+        crop: Optional crop value string. When a potato crop is specified and
+            lime is required, a warning about common scab risk is added.
     """
     try:
         SoilType(soil_type)
@@ -644,6 +698,32 @@ def calculate_lime(
             f"Total lime required ({lime_needed} t/ha) exceeds single application "
             f"maximum ({MAX_SINGLE_APPLICATION} t/ha). Apply in split dressings "
             f"over successive years."
+        )
+
+    # 1.4 Lime-before-potatoes warning
+    if crop is not None and crop.startswith("potatoes-"):
+        notes.append(
+            "Avoid liming immediately before potatoes — increases common scab "
+            "risk and manganese deficiency risk."
+        )
+
+    # 1.5 Over-liming trace element warnings
+    if target_ph > 7.0 and land_use == "grassland":
+        notes.append(
+            "Avoid liming grassland above pH 7.0 — may induce copper, cobalt "
+            "and selenium deficiencies."
+        )
+    if target_ph > 7.5:
+        notes.append(
+            "Manganese deficiency risk increases above pH 7.5."
+        )
+    if soil_type == "light" and target_ph > 6.5:
+        notes.append(
+            "On sandy soils, manganese deficiency is more likely above pH 6.5."
+        )
+    if soil_type == "organic" and target_ph > 6.0:
+        notes.append(
+            "On organic/peaty soils, manganese deficiency is more likely above pH 6.0."
         )
 
     return LimeRecommendation(

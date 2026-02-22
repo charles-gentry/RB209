@@ -259,5 +259,211 @@ class TestCalculateLime(unittest.TestCase):
         )
 
 
+class TestNVZWarnings(unittest.TestCase):
+    def test_nvz_warning_when_n_exceeds_limit(self):
+        # N = 220, threshold = 220 — at limit, not over; no warning
+        rec = recommend_all("winter-wheat-feed", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 220)
+        self.assertFalse(any("NVZ" in n or "N-max" in n for n in rec.notes))
+
+    def test_nvz_warning_when_n_exceeds_limit_soil_specific(self):
+        # N = 250 (medium soil-specific), threshold = 220 — warning present
+        rec = recommend_all(
+            "winter-wheat-feed", sns_index=0, p_index=2, k_index=2, soil_type="medium"
+        )
+        self.assertEqual(rec.nitrogen, 250)
+        self.assertTrue(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_no_warning_when_under_limit(self):
+        # N = 120 < 220 — no NVZ note
+        rec = recommend_all("winter-wheat-feed", sns_index=3, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 120)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_no_warning_for_crop_without_limit(self):
+        # sugar-beet is not in NVZ_NMAX
+        rec = recommend_all("sugar-beet", sns_index=0, p_index=2, k_index=2)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_warning_text_contains_values(self):
+        # Warning text should contain recommendation (250) and limit (220) as integers
+        rec = recommend_all(
+            "winter-wheat-feed", sns_index=0, p_index=2, k_index=2, soil_type="medium"
+        )
+        nvz_notes = [n for n in rec.notes if "N-max" in n]
+        self.assertTrue(len(nvz_notes) > 0)
+        note = nvz_notes[0]
+        self.assertIn("250", note)
+        self.assertIn("220", note)
+
+
+class TestPotashSplitWarnings(unittest.TestCase):
+    # 1.2 Potatoes split warnings
+    def test_potash_split_note_for_potatoes_above_300(self):
+        # K2O = 300 at k_index=0; threshold is >300 so no note
+        rec = recommend_all("potatoes-maincrop", 2, 2, 0)
+        self.assertEqual(rec.potassium, 300)
+        self.assertFalse(any("split" in n.lower() for n in rec.notes))
+
+    def test_potash_split_note_not_present_at_300(self):
+        # Same: K2O = 300 exactly; assert no "split" note
+        rec = recommend_all("potatoes-maincrop", 2, 2, 0)
+        self.assertFalse(any("split" in n.lower() for n in rec.notes))
+
+    def test_potash_split_note_not_for_cereals(self):
+        # Cereals never get a potash split note regardless of K level
+        rec = recommend_all("winter-wheat-feed", 2, 2, 0)
+        self.assertEqual(rec.potassium, 105)
+        self.assertFalse(
+            any("autumn/winter" in n and "spring" in n for n in rec.notes)
+        )
+
+    def test_potash_no_split_for_low_k(self):
+        # potatoes-early at k_index=2 → K2O = 150; no split note
+        rec = recommend_all("potatoes-early", 2, 2, 2)
+        self.assertEqual(rec.potassium, 150)
+        self.assertFalse(any("autumn/winter" in n for n in rec.notes))
+
+    # 1.3 Grass silage luxury uptake warnings
+    def test_grass_silage_potash_split_note_at_k0(self):
+        # K2O = 150 > 90 → luxury uptake note
+        rec = recommend_all("grass-silage", 2, 2, 0)
+        self.assertEqual(rec.potassium, 150)
+        self.assertTrue(any("luxury uptake" in n for n in rec.notes))
+
+    def test_grass_silage_no_potash_note_at_k2(self):
+        # K2O = 60 ≤ 90 → no luxury uptake note
+        rec = recommend_all("grass-silage", 2, 2, 2)
+        self.assertEqual(rec.potassium, 60)
+        self.assertFalse(any("luxury uptake" in n for n in rec.notes))
+
+    def test_potash_luxury_note_not_for_grazed_grass(self):
+        # grass-grazed at k_index=0 → K2O = 60; no luxury-uptake note
+        rec = recommend_all("grass-grazed", 2, 2, 0)
+        self.assertEqual(rec.potassium, 60)
+        self.assertFalse(any("luxury uptake" in n for n in rec.notes))
+
+
+class TestCalculateLimePotato(unittest.TestCase):
+    """Tests for 1.4 lime-before-potatoes warning."""
+
+    def test_lime_potato_scab_warning(self):
+        result = calculate_lime(5.5, 6.5, "medium", crop="potatoes-maincrop")
+        self.assertGreater(result.lime_required, 0)
+        self.assertTrue(any("common scab" in n for n in result.notes))
+
+    def test_lime_no_potato_warning_when_no_lime_needed(self):
+        result = calculate_lime(7.0, 6.5, "medium", crop="potatoes-maincrop")
+        self.assertEqual(result.lime_required, 0.0)
+        self.assertFalse(any("common scab" in n for n in result.notes))
+
+    def test_lime_no_potato_warning_for_cereals(self):
+        result = calculate_lime(5.5, 6.5, "medium", crop="winter-wheat-feed")
+        self.assertFalse(any("common scab" in n for n in result.notes))
+
+    def test_lime_no_potato_warning_when_no_crop(self):
+        result = calculate_lime(5.5, 6.5, "medium")
+        self.assertFalse(any("common scab" in n for n in result.notes))
+
+
+class TestCalculateLimeOverliming(unittest.TestCase):
+    """Tests for 1.5 over-liming trace element warnings."""
+
+    def test_overlime_grassland_ph7_warning(self):
+        result = calculate_lime(6.5, 7.5, "medium", land_use="grassland")
+        self.assertTrue(any("copper, cobalt" in n for n in result.notes))
+
+    def test_overlime_no_warning_arable_ph7(self):
+        result = calculate_lime(6.5, 7.5, "medium", land_use="arable")
+        self.assertFalse(any("copper, cobalt" in n for n in result.notes))
+
+    def test_overlime_mn_warning_above_7_5(self):
+        result = calculate_lime(7.0, 8.0, "medium")
+        self.assertTrue(any("Manganese" in n for n in result.notes))
+
+    def test_overlime_sandy_mn_warning_above_6_5(self):
+        result = calculate_lime(6.0, 7.0, "light")
+        combined = " ".join(result.notes)
+        self.assertIn("sandy", combined)
+        self.assertIn("manganese", combined.lower())
+
+    def test_overlime_organic_mn_warning_above_6_0(self):
+        result = calculate_lime(5.5, 6.5, "organic")
+        combined = " ".join(result.notes)
+        self.assertTrue("organic" in combined.lower() or "peaty" in combined.lower())
+        self.assertIn("manganese", combined.lower())
+
+    def test_no_overlime_warning_when_no_lime_needed(self):
+        result = calculate_lime(7.0, 6.5, "medium")
+        self.assertEqual(result.lime_required, 0.0)
+        # No over-liming notes (lime_needed path not reached)
+        self.assertFalse(any("copper" in n or "Manganese" in n or "sandy" in n
+                              for n in result.notes))
+
+
+class TestHypomagnesaemiaWarning(unittest.TestCase):
+    def test_hypomagnesaemia_warning_grass_grazed_mg0(self):
+        # k_index=0 → K2O = 60 > 0; mg_index=0; grassland → warning
+        rec = recommend_all("grass-grazed", 2, 2, 0, mg_index=0)
+        self.assertGreater(rec.potassium, 0)
+        self.assertTrue(any("hypomagnesaemia" in n for n in rec.notes))
+
+    def test_no_hypomagnesaemia_warning_mg2(self):
+        rec = recommend_all("grass-grazed", 2, 2, 0, mg_index=2)
+        self.assertFalse(any("hypomagnesaemia" in n for n in rec.notes))
+
+    def test_no_hypomagnesaemia_warning_arable(self):
+        rec = recommend_all("winter-wheat-feed", 2, 2, 0, mg_index=0)
+        self.assertFalse(any("hypomagnesaemia" in n for n in rec.notes))
+
+    def test_no_hypomagnesaemia_warning_k_zero(self):
+        # k_index=3 → K2O = 0; condition k > 0 is False
+        rec = recommend_all("grass-grazed", 2, 2, 3, mg_index=0)
+        self.assertEqual(rec.potassium, 0)
+        self.assertFalse(any("hypomagnesaemia" in n for n in rec.notes))
+
+
+class TestCloverWarning(unittest.TestCase):
+    def test_clover_warning_grass_grazed_with_n(self):
+        # sns_index=2 → N = 180 > 0; clover_risk → warning
+        rec = recommend_all("grass-grazed", 2, 2, 2)
+        self.assertGreater(rec.nitrogen, 0)
+        self.assertTrue(any("clover" in n for n in rec.notes))
+
+    def test_clover_warning_not_shown_when_n_zero(self):
+        # sns_index=6 → N = 0; no clover warning
+        rec = recommend_all("grass-grazed", 6, 2, 2)
+        self.assertEqual(rec.nitrogen, 0)
+        self.assertFalse(any("clover" in n for n in rec.notes))
+
+    def test_clover_warning_not_shown_for_arable(self):
+        rec = recommend_all("winter-wheat-feed", 2, 2, 2)
+        self.assertFalse(any("clover" in n for n in rec.notes))
+
+
+class TestCombineDrillWarning(unittest.TestCase):
+    def test_combine_drill_warning_light_soil_high_nk(self):
+        # N=180 (light soil), K=105 (k_index=0 straw removed), total=285 > 150
+        rec = recommend_all("winter-wheat-feed", 0, 2, 0, soil_type="light")
+        self.assertEqual(rec.nitrogen, 180)
+        self.assertEqual(rec.potassium, 105)
+        self.assertTrue(any("combine-drill" in n for n in rec.notes))
+
+    def test_no_combine_drill_warning_medium_soil(self):
+        rec = recommend_all("winter-wheat-feed", 0, 2, 0, soil_type="medium")
+        self.assertFalse(any("combine-drill" in n for n in rec.notes))
+
+    def test_no_combine_drill_warning_low_nk(self):
+        # N=60 (light, sns=4), K=0 (k_index=3); total=60 ≤ 150
+        rec = recommend_all("winter-wheat-feed", 4, 2, 3, soil_type="light")
+        self.assertEqual(rec.potassium, 0)
+        self.assertFalse(any("combine-drill" in n for n in rec.notes))
+
+    def test_no_combine_drill_warning_grassland(self):
+        # grass-silage is not arable → no combine-drill warning
+        rec = recommend_all("grass-silage", 0, 2, 0, soil_type="light")
+        self.assertFalse(any("combine-drill" in n for n in rec.notes))
+
+
 if __name__ == "__main__":
     unittest.main()

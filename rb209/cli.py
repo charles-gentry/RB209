@@ -144,13 +144,14 @@ def _handle_organic(args: argparse.Namespace) -> None:
 def _handle_lime(args: argparse.Namespace) -> None:
     target_ph = getattr(args, "target_ph", None)
     land_use = getattr(args, "land_use", None)
+    crop = getattr(args, "crop", None)
     if target_ph is None and land_use is None:
         print(
             "Error: one of --target-ph or --land-use is required.",
             file=sys.stderr,
         )
         sys.exit(2)
-    result = calculate_lime(args.current_ph, target_ph, args.soil_type, land_use=land_use)
+    result = calculate_lime(args.current_ph, target_ph, args.soil_type, land_use=land_use, crop=crop)
     print(format_lime(result, args.output_format))
 
 
@@ -394,6 +395,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_lime.add_argument("--soil-type", required=True,
                          choices=[s.value for s in SoilType],
                          help="Soil type")
+    p_lime.add_argument("--crop",
+                         choices=_crop_choices(),
+                         default=None,
+                         help=(
+                             "Optional crop type. When a potato crop is specified "
+                             "and lime is required, a warning about common scab "
+                             "risk is added."
+                         ))
     _add_format_arg(p_lime)
     p_lime.set_defaults(func=_handle_lime)
 
