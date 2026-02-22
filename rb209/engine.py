@@ -1,7 +1,6 @@
 """Recommendation engine — core logic for RB209 fertiliser calculations."""
 
 from rb209.models import (
-    Crop,
     LimeRecommendation,
     NResidueCategory,
     NitrogenSplit,

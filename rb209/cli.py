@@ -29,7 +29,7 @@ from rb209.formatters import (
     format_sns,
     format_timing,
 )
-from rb209.models import Crop, OrganicMaterial, PreviousCrop, Rainfall, SoilType
+from rb209.models import OrganicMaterial, PreviousCrop, Rainfall, SoilType
 
 
 def _crop_choices() -> list[str]:
