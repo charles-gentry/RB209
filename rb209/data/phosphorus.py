@@ -85,3 +85,76 @@ PHOSPHORUS_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("grass-grazed-one-cut", 3): 10,
     ("grass-grazed-one-cut", 4): 0,
 }
+
+# Vegetable crop phosphorus recommendations (Section 6).
+# (crop_value, p_index) -> kg P2O5/ha; p_index clamped to 0-4.
+PHOSPHORUS_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
+    # Asparagus (establishment)
+    ("veg-asparagus-est", 0): 175, ("veg-asparagus-est", 1): 150,
+    ("veg-asparagus-est", 2): 125, ("veg-asparagus-est", 3): 100,
+    ("veg-asparagus-est", 4): 75,
+
+    # Asparagus (subsequent)
+    ("veg-asparagus", 0): 75,  ("veg-asparagus", 1): 75,
+    ("veg-asparagus", 2): 50,  ("veg-asparagus", 3): 50,
+    ("veg-asparagus", 4): 25,
+
+    # Brassicas — 200/150/100/50/0
+    **{(crop, idx): val
+       for crop in [
+           "veg-brussels-sprouts",
+           "veg-cabbage-storage", "veg-cabbage-head-pre-dec", "veg-cabbage-head-post-dec",
+           "veg-collards-pre-dec", "veg-collards-post-dec",
+           "veg-cauliflower-summer", "veg-cauliflower-winter-seedbed",
+           "veg-cauliflower-winter-topdress", "veg-calabrese",
+       ]
+       for idx, val in [(0, 200), (1, 150), (2, 100), (3, 50), (4, 0)]},
+
+    # Celery — 250/200/150/100/50
+    ("veg-celery-seedbed", 0): 250, ("veg-celery-seedbed", 1): 200,
+    ("veg-celery-seedbed", 2): 150, ("veg-celery-seedbed", 3): 100,
+    ("veg-celery-seedbed", 4): 50,
+
+    # Peas (market) — 185/135/85/35/0
+    ("veg-peas-market", 0): 185, ("veg-peas-market", 1): 135,
+    ("veg-peas-market", 2): 85,  ("veg-peas-market", 3): 35,
+    ("veg-peas-market", 4): 0,
+
+    # Broad beans, dwarf/runner beans — 200/150/100/50/0
+    **{(crop, idx): val
+       for crop in ["veg-beans-broad", "veg-beans-dwarf"]
+       for idx, val in [(0, 200), (1, 150), (2, 100), (3, 50), (4, 0)]},
+
+    # Radish, sweetcorn — 175/125/75/25/0
+    **{(crop, idx): val
+       for crop in ["veg-radish", "veg-sweetcorn"]
+       for idx, val in [(0, 175), (1, 125), (2, 75), (3, 25), (4, 0)]},
+
+    # Lettuce (all types), rocket — 250/200/150/100/0
+    **{(crop, idx): val
+       for crop in ["veg-lettuce-whole", "veg-lettuce-baby", "veg-rocket"]
+       for idx, val in [(0, 250), (1, 200), (2, 150), (3, 100), (4, 0)]},
+
+    # Bulb/salad onions, leeks — 200/150/100/50/0
+    **{(crop, idx): val
+       for crop in ["veg-onions-bulb", "veg-onions-salad", "veg-leeks"]
+       for idx, val in [(0, 200), (1, 150), (2, 100), (3, 50), (4, 0)]},
+
+    # Beetroot, swedes, turnips/parsnips, carrots, bulbs — 200/150/100/50/0
+    **{(crop, idx): val
+       for crop in [
+           "veg-beetroot", "veg-swedes", "veg-turnips-parsnips",
+           "veg-carrots", "veg-bulbs",
+       ]
+       for idx, val in [(0, 200), (1, 150), (2, 100), (3, 50), (4, 0)]},
+
+    # Coriander, mint (est + sub) — 175/125/75/25/0
+    **{(crop, idx): val
+       for crop in ["veg-coriander", "veg-mint-est", "veg-mint"]
+       for idx, val in [(0, 175), (1, 125), (2, 75), (3, 25), (4, 0)]},
+
+    # Courgettes — 175/125/75/25/0
+    ("veg-courgettes-seedbed", 0): 175, ("veg-courgettes-seedbed", 1): 125,
+    ("veg-courgettes-seedbed", 2): 75,  ("veg-courgettes-seedbed", 3): 25,
+    ("veg-courgettes-seedbed", 4): 0,
+}

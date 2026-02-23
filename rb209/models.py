@@ -12,6 +12,31 @@ class SoilType(Enum):
     ORGANIC = "organic"    # Peaty, organic soils
 
 
+class VegSoilType(str, Enum):
+    """Soil type categories for vegetable SNS tables (Section 6)."""
+    LIGHT_SAND = "light-sand"   # light sand soils or shallow soils over sandstone
+    MEDIUM     = "medium"       # medium soils or shallow soils not over sandstone
+    DEEP_CLAY  = "deep-clay"    # deep clayey soils
+    DEEP_SILT  = "deep-silt"    # deep silty soils
+    ORGANIC    = "organic"      # advisory only — SNS Index 3–6, consult FACTS
+    PEAT       = "peat"         # advisory only — SNS Index 4–6, consult FACTS
+
+
+class VegPreviousCrop(str, Enum):
+    """Previous crop categories for vegetable SNS tables (Section 6)."""
+    BEANS       = "beans"
+    CEREALS     = "cereals"
+    FORAGE_CUT  = "forage-cut"
+    OSR         = "oilseed-rape"
+    PEAS        = "peas"
+    POTATOES    = "potatoes"
+    SUGAR_BEET  = "sugar-beet"
+    UNCROPPED   = "uncropped"
+    VEG_LOW_N   = "veg-low-n"    # carrots, onions, radish, swedes, turnips
+    VEG_MEDIUM_N = "veg-medium-n" # lettuce, leeks, long-season brassicas
+    VEG_HIGH_N  = "veg-high-n"   # calabrese, Brussels sprouts, cauliflower
+
+
 
 class PreviousCrop(Enum):
     """Previous crop categories for SNS determination."""
