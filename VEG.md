@@ -6,7 +6,7 @@ Source reference: `ref/section6_vegetables.md` (RB209 9th edition, updated Janua
 
 ## Overview
 
-This plan adds full support for **33 vegetable and bulb crop types** from RB209 Section 6.
+This plan adds full support for **34 vegetable and bulb crop types** from RB209 Section 6.
 It requires changes across six data files, the recommendation engine, the CLI, and a new
 test module. The work is broken into self-contained steps that can be reviewed and merged
 independently.
@@ -26,7 +26,7 @@ Key differences from existing arable/grassland crops that drive most of the desi
 
 ## 1. New Crop Catalogue — `rb209/data/crops.py`
 
-Add the following 33 entries to `CROP_INFO`. All use `"category": "vegetables"`.
+Add the following 34 entries to `CROP_INFO`. All use `"category": "vegetables"`.
 
 | Slug | `name` | Notes field (brief) |
 |---|---|---|
@@ -63,6 +63,7 @@ Add the following 33 entries to `CROP_INFO`. All use `"category": "vegetables"`.
 | `veg-mint-est` | Mint (establishment year) | — |
 | `veg-mint` | Mint (subsequent years) | — |
 | `veg-courgettes-seedbed` | Courgettes (seedbed N) | Up to 75 kg N/ha top dressing may also be required. |
+| `veg-courgettes-topdress` | Courgettes (top dressing N) | Top dressing applied after establishment. P2O5 and K2O are applied in the seedbed; only N is included here. |
 
 Each entry also needs `"has_straw_option": False`.
 
@@ -523,7 +524,7 @@ When `k_index == 2 and k_upper_half and crop in POTASSIUM_VEG_K2_UPPER`, return
 
 ## 6. Magnesium Data — `rb209/data/magnesium.py`
 
-All 33 vegetable crops use the same Mg recommendation (RB209 Section 6, p.16):
+All 34 vegetable crops use the same Mg recommendation (RB209 Section 6, p.16):
 
 ```
 Mg Index 0 → 150 kg MgO/ha
@@ -708,7 +709,7 @@ The vegetable crops are automatically available once added to `CROP_INFO`, but:
 ### 9b. Group vegetable crops in `--list` output
 
 When listing available crops, group by category. Output should show a `vegetables` section
-listing all 33 veg slugs alongside their display names.
+listing all 34 veg slugs alongside their display names.
 
 ---
 
@@ -753,7 +754,7 @@ Create a new test file covering:
 
 1. `models.py` — add `VegSoilType` and `VegPreviousCrop` enums
 2. `data/sns.py` — add `VEG_SNS_LOOKUP` and `VEG_SMN_SNS_THRESHOLDS`
-3. `data/crops.py` — add 33 vegetable crop entries
+3. `data/crops.py` — add 34 vegetable crop entries
 4. `data/nitrogen.py` — add `NITROGEN_VEG_RECOMMENDATIONS`
 5. `data/phosphorus.py` — add `PHOSPHORUS_VEG_RECOMMENDATIONS`
 6. `data/potassium.py` — add `POTASSIUM_VEG_RECOMMENDATIONS` and `POTASSIUM_VEG_K2_UPPER`
@@ -771,13 +772,14 @@ The following are documented in Section 6 but are not part of this implementatio
 
 - **Leaf analysis tables** (Tables 6.10, 6.13, 6.15, 6.21, 6.23) — reference only, no
   recommendations to compute.
-- **Yield adjustment data** (`Table 6.27`) — the methodology requires crop-specific dry
-  matter, harvest index, and mineralisation parameters not yet integrated into the engine.
-  Add to `yield_adjustments.py` in a follow-up plan.
-- **Nitrogen timing rules** for vegetable crops — the seedbed/top-dressing splits are
-  captured as separate crop slugs (e.g. `veg-cauliflower-winter-seedbed` vs
-  `veg-cauliflower-winter-topdress`) rather than through the `timing.py` machinery.
-  A dedicated vegetable timing module may be added in future.
+- ~~**Yield adjustment data** (`Table 6.27`)~~ — **now implemented** in
+  `rb209/data/yield_adjustments.py`.  19 vegetable crop slugs support
+  `--expected-yield` via N uptake / baseline / 60 % recovery (Table 6.27) and
+  per-tonne P2O5/K2O offtake (Table 6.8).  See TODO.md for excluded crops.
+- ~~**Nitrogen timing rules** for vegetable crops~~ — **now implemented** in
+  `rb209/data/timing.py`.  All 34 vegetable crops have timing rules covering
+  seedbed-cap splits, asparagus multi-year schedules, and per-crop calendar
+  guidance.  See TODO.md for the full list of covered rules.
 - **Sodium recommendations** — Asparagus (up to 500 kg Na₂O/ha) and Celery (responsive
   on most soils). Out of scope until a general sodium module is added.
 - **Micronutrient guidance** (Table 6.9) — qualitative risk factors only; no kg/ha values

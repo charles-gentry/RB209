@@ -1309,7 +1309,7 @@ Available Organic Materials
 | `veg-celery-seedbed` | Self-blanching Celery (seedbed N) | `timing` adds top-dressing reminder |
 | `veg-peas-market` | Peas (market pick) | N = 0 at all indices (N-fixing) |
 | `veg-beans-broad` | Broad Beans | N = 0 at all indices (N-fixing) |
-| `veg-beans-dwarf` | Dwarf/Runner Beans (seedbed N) | N = 0 at all indices (N-fixing) |
+| `veg-beans-dwarf` | Dwarf/Runner Beans (seedbed N) | Seedbed N cap applies; not N-fixing |
 | `veg-radish` | Radish | |
 | `veg-sweetcorn` | Sweetcorn | |
 | `veg-lettuce-whole` | Lettuce (whole head) | Nitrate note added |
