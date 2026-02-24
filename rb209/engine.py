@@ -44,6 +44,7 @@ from rb209.data.sns import (
     SNS_VALUE_TO_INDEX,
     VEG_SNS_LOOKUP,
     VEG_SMN_SNS_THRESHOLDS,
+    VEG_SNS_ORGANIC_ADVISORY,
 )
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
@@ -366,31 +367,32 @@ def calculate_veg_sns(
 
     notes: list[str] = []
 
-    # Advisory-only soil types — return fixed indices with FACTS advice note
-    if soil_type == "organic":
+    # Advisory-only soil types — Tables 6.2–6.4 give only a range for these
+    # soils because their high N mineralisation potential cannot be
+    # characterised by previous crop and rainfall alone.
+    if soil_type in VEG_SNS_ORGANIC_ADVISORY:
+        min_idx, rep_idx, max_idx = VEG_SNS_ORGANIC_ADVISORY[soil_type]
+        soil_label = "organic" if soil_type == "organic" else "peat"
         notes.append(
-            "Organic soils typically have SNS Index 3–6. "
-            "Consult a FACTS Qualified Adviser for site-specific guidance."
+            f"RB209 Tables 6.2–6.4 do not provide a crop- or rainfall-specific "
+            f"SNS index for {soil_label} soils. All crops fall in SNS Index "
+            f"{min_idx}–{max_idx} depending on site conditions."
+        )
+        notes.append(
+            f"SNS Index {rep_idx} is returned as a representative mid-range "
+            f"estimate. Use the 'veg-smn' command with a soil mineral nitrogen "
+            f"(SMN) measurement for a precise, site-specific index."
+        )
+        notes.append(
+            "Consult a FACTS Qualified Adviser before applying nitrogen on "
+            f"{soil_label} soils."
         )
         return SNSResult(
-            sns_index=4,
+            sns_index=rep_idx,
             previous_crop=previous_crop,
             soil_type=soil_type,
             rainfall=rainfall,
-            method="veg-field-assessment",
-            notes=notes,
-        )
-    if soil_type == "peat":
-        notes.append(
-            "Peat soils typically have SNS Index 4–6. "
-            "Consult a FACTS Qualified Adviser for site-specific guidance."
-        )
-        return SNSResult(
-            sns_index=5,
-            previous_crop=previous_crop,
-            soil_type=soil_type,
-            rainfall=rainfall,
-            method="veg-field-assessment",
+            method="veg-field-assessment-advisory",
             notes=notes,
         )
 

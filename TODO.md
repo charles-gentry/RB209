@@ -63,14 +63,6 @@ with no quantitative values to implement.
 - **Description**: Advisory text on applying nutrients through irrigation
   systems.
 
-### Organic Soil Vegetable SNS — Full Field Assessment
-- **Status**: Partially addressed.  For organic and peat soils,
-  `calculate_veg_sns()` returns an advisory SNS Index (4 for organic, 5 for
-  peat) with a FACTS Qualified Adviser note — matching RB209 guidance.
-  A future enhancement could provide a structured SMN-based lookup using
-  `smn_to_sns_index_veg()` for these soils as the preferred method, but the
-  advisory-only approach is consistent with the Section 6 text.
-
 ---
 
 ## Other Sections — Pending
@@ -82,6 +74,23 @@ with no quantitative values to implement.
 ---
 
 ## Recently Completed
+
+### ~~Organic Soil Vegetable SNS — Full Field Assessment~~ ✓
+- **Source**: RB209 Tables 6.2–6.4
+- **Status**: Implemented.  `calculate_veg_sns()` now provides a full field
+  assessment for organic and peat soils:
+  - A `VEG_SNS_ORGANIC_ADVISORY` lookup table in `rb209/data/sns.py` records
+    the advisory ranges verbatim from Tables 6.2–6.4: SNS Index 3–6 for
+    organic soils and SNS Index 4–6 for peat soils.
+  - The engine returns a representative mid-range index (4 for organic,
+    5 for peat) with `method="veg-field-assessment-advisory"` to distinguish
+    it from a calculated mineral-soil lookup.
+  - Three structured advisory notes are generated: (1) the specific range
+    from Tables 6.2–6.4, (2) a recommendation to use the `veg-smn` command
+    with a soil mineral nitrogen measurement for a site-specific index, and
+    (3) a reminder to consult a FACTS Qualified Adviser.
+  - Existing behaviour (advisory index, FACTS note) is preserved; the method
+    string and note wording are improved.
 
 ### ~~Yield Adjustments for Vegetable Crops~~ ✓
 - **Source**: RB209 Table 6.27 (N baseline and uptake), Table 6.8 (P2O5/K2O offtake)
@@ -126,4 +135,4 @@ with no quantitative values to implement.
 
 ---
 
-*Last updated: 2026-02-24.*
+*Last updated: 2026-02-24 (organic soil veg SNS completed).*

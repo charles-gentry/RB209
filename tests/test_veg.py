@@ -62,10 +62,46 @@ class TestVegSNSLookup(unittest.TestCase):
         self.assertEqual(result.sns_index, 4)
         self.assertTrue(any("FACTS" in n for n in result.notes))
 
+    def test_organic_soil_method_is_advisory(self):
+        result = calculate_veg_sns("veg-high-n", "organic", "low")
+        self.assertEqual(result.method, "veg-field-assessment-advisory")
+
+    def test_organic_soil_notes_contain_range(self):
+        result = calculate_veg_sns("cereals", "organic", "high")
+        self.assertTrue(any("3" in n and "6" in n for n in result.notes))
+
+    def test_organic_soil_notes_recommend_veg_smn(self):
+        result = calculate_veg_sns("beans", "organic", "moderate")
+        self.assertTrue(any("veg-smn" in n for n in result.notes))
+
+    def test_organic_soil_notes_independent_of_previous_crop(self):
+        # Field assessment cannot differentiate by previous crop for organic soils
+        r1 = calculate_veg_sns("cereals", "organic", "low")
+        r2 = calculate_veg_sns("veg-high-n", "organic", "low")
+        self.assertEqual(r1.sns_index, r2.sns_index)
+
     def test_peat_soil_returns_advisory_index(self):
         result = calculate_veg_sns("cereals", "peat", "low")
         self.assertEqual(result.sns_index, 5)
         self.assertTrue(any("FACTS" in n for n in result.notes))
+
+    def test_peat_soil_method_is_advisory(self):
+        result = calculate_veg_sns("cereals", "peat", "moderate")
+        self.assertEqual(result.method, "veg-field-assessment-advisory")
+
+    def test_peat_soil_notes_contain_range(self):
+        result = calculate_veg_sns("cereals", "peat", "high")
+        self.assertTrue(any("4" in n and "6" in n for n in result.notes))
+
+    def test_peat_soil_notes_recommend_veg_smn(self):
+        result = calculate_veg_sns("beans", "peat", "low")
+        self.assertTrue(any("veg-smn" in n for n in result.notes))
+
+    def test_peat_soil_notes_independent_of_previous_crop(self):
+        # Field assessment cannot differentiate by previous crop for peat soils
+        r1 = calculate_veg_sns("cereals", "peat", "high")
+        r2 = calculate_veg_sns("veg-low-n", "peat", "high")
+        self.assertEqual(r1.sns_index, r2.sns_index)
 
     def test_invalid_previous_crop_raises(self):
         with self.assertRaises(ValueError):
