@@ -2,7 +2,7 @@
 
 RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, lime, organic materials, and nitrogen application timing.
 
-The tool supports 22 crop types across arable, grassland, and potato categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
+The tool supports 55 crop types across arable, grassland, potato, and vegetable categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
 
 - **Entry points:** `rb209` (if installed) or `python -m rb209`
 - **Python:** 3.10+
@@ -118,6 +118,7 @@ rb209 recommend --crop CROP --sns-index N --p-index N --k-index N [options]
 | `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
 | `--ber` | No | float | any positive value | -- | Break-even ratio (fertiliser N cost £/kg ÷ grain value £/kg). Default: 5.0. Only affects wheat and barley N recommendations. Values between table entries are linearly interpolated. |
+| `--k-upper-half` / `-ku` | No | flag | -- | false | Use the K Index 2+ rate (181–240 mg/l) for vegetable crops at K Index 2. By default the lower 2- rate (121–180 mg/l) is used. Has no effect for non-vegetable crops or K indices other than 2. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
@@ -530,6 +531,172 @@ The JSON output uses the same `SNSResult` schema as the `sns` and `sns-smn` comm
 
 ---
 
+### veg-sns
+
+Calculate the Soil Nitrogen Supply (SNS) index for vegetable crops using the RB209 Section 6 field assessment tables (Tables 6.2–6.4). These tables differ from the arable Tables 4.3–4.5 in both the previous-crop categories (11 vs 4) and the soil-type columns (4 mineral columns vs 3).
+
+**Usage:**
+
+```
+rb209 veg-sns --previous-crop CROP --soil-type TYPE --rainfall LEVEL [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--previous-crop` | Yes | string | `beans`, `cereals`, `forage-cut`, `oilseed-rape`, `peas`, `potatoes`, `sugar-beet`, `uncropped`, `veg-low-n`, `veg-medium-n`, `veg-high-n` | -- | Previous crop category for vegetable SNS (Section 6) |
+| `--soil-type` | Yes | string | `light-sand`, `medium`, `deep-clay`, `deep-silt`, `organic`, `peat` | -- | Vegetable soil type column from Tables 6.2–6.4. Organic and peat soils return an advisory index with a note to consult a FACTS Qualified Adviser. |
+| `--rainfall` | Yes | string | `low`, `moderate`, `high` | -- | Rainfall category: `low` (<600 mm / <150 mm EWR), `moderate` (600–700 mm), `high` (>700 mm / >250 mm EWR) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (table):**
+
+```
+$ rb209 veg-sns --previous-crop cereals --soil-type medium --rainfall moderate
++--------------------------------------+
+| Soil Nitrogen Supply (SNS)           |
++--------------------------------------+
+|   SNS Index                          1 |
+|   Previous crop                cereals |
+|   Soil type                     medium |
+|   Rainfall                    moderate |
+|   Method          veg-field-assessment |
++--------------------------------------+
+| Previous crop 'cereals' on medium so |
+| il with moderate rainfall gives SNS  |
+| Index 1 (Tables 6.2–6.4).            |
++--------------------------------------+
+```
+
+**Example (JSON):**
+
+```json
+{
+  "sns_index": 1,
+  "previous_crop": "cereals",
+  "soil_type": "medium",
+  "rainfall": "moderate",
+  "method": "veg-field-assessment",
+  "smn": null,
+  "crop_n": null,
+  "sns_value": null,
+  "notes": [
+    "Previous crop 'cereals' on medium soil with moderate rainfall gives SNS Index 1 (Tables 6.2–6.4)."
+  ]
+}
+```
+
+**JSON schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sns_index` | int | Calculated SNS index (0–6) |
+| `previous_crop` | string | Previous crop value as provided |
+| `soil_type` | string | Soil type as provided |
+| `rainfall` | string | Rainfall category as provided |
+| `method` | string | Always `"veg-field-assessment"` for mineral soils; `"veg-field-assessment"` with advisory note for organic/peat soils |
+| `smn` | null | Not applicable for field-assessment method |
+| `crop_n` | null | Not applicable |
+| `sns_value` | null | Not applicable |
+| `notes` | string[] | Describes the table lookup; for organic/peat soils, advises consulting a FACTS Qualified Adviser |
+
+**Notes:**
+- The vegetable SNS lookup uses different previous-crop categories from the arable `sns` command. See [Vegetable Previous Crops](#vegetable-previous-crops) for the full list.
+- Rainfall bands differ from arable: `low` maps to Table 6.2, `moderate` to Table 6.3, `high` to Table 6.4.
+- For **organic** soils, SNS Index 4 is returned with a note that organic soils typically have SNS 3–6 and a FACTS Qualified Adviser should be consulted.
+- For **peat** soils, SNS Index 5 is returned with a similar advisory note.
+- Use the resulting `sns_index` as the `--sns-index` argument to `recommend` or `nitrogen`.
+
+---
+
+### veg-smn
+
+Calculate the Soil Nitrogen Supply (SNS) index for vegetable crops from a direct Soil Mineral Nitrogen (SMN) measurement, using RB209 Table 6.6. The thresholds differ from the arable Table 4.10 used by `sns-smn`.
+
+**Usage:**
+
+```
+rb209 veg-smn --smn VALUE --depth DEPTH [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--smn` | Yes | float | >= 0 | -- | Soil Mineral Nitrogen (kg N/ha) measured to the specified depth |
+| `--depth` | Yes | int | `30`, `60`, `90` | -- | Sampling depth in cm |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (table):**
+
+```
+$ rb209 veg-smn --smn 45 --depth 60
++------------------------------+
+| Soil Nitrogen Supply (SNS)   |
++------------------------------+
+|   SNS Index         1        |
+|   Soil type                  |
+|   Rainfall                   |
+|   Method      veg-smn        |
++------------------------------+
+| SMN (45.0 kg N/ha to 60 cm d |
+| epth) gives SNS Index 1 (Tab |
+| le 6.6).                     |
++------------------------------+
+```
+
+**Example (JSON):**
+
+```json
+{
+  "sns_index": 1,
+  "previous_crop": "",
+  "soil_type": "",
+  "rainfall": "",
+  "method": "veg-smn",
+  "smn": 45.0,
+  "crop_n": null,
+  "sns_value": null,
+  "notes": [
+    "SMN (45.0 kg N/ha to 60 cm depth) gives SNS Index 1 (Table 6.6)."
+  ]
+}
+```
+
+**JSON schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sns_index` | int | Calculated SNS index (0–6) |
+| `previous_crop` | string | Empty string (not applicable) |
+| `soil_type` | string | Empty string (not applicable) |
+| `rainfall` | string | Empty string (not applicable) |
+| `method` | string | Always `"veg-smn"` |
+| `smn` | float | SMN value as provided (kg N/ha) |
+| `crop_n` | null | Not applicable |
+| `sns_value` | null | Not applicable |
+| `notes` | string[] | Describes the SMN value, depth, and resulting index |
+
+**SMN thresholds (Table 6.6):**
+
+| SNS Index | 0–30 cm (kg N/ha) | 0–60 cm (kg N/ha) | 0–90 cm (kg N/ha) |
+|-----------|-------------------|-------------------|-------------------|
+| 0 | ≤ 19.9 | ≤ 39.9 | ≤ 59.9 |
+| 1 | 20 – 27 | 40 – 53 | 60 – 80 |
+| 2 | 27.1 – 33 | 53.1 – 67 | 80.1 – 100 |
+| 3 | 33.1 – 40 | 67.1 – 80 | 100.1 – 120 |
+| 4 | 40.1 – 53 | 80.1 – 107 | 120.1 – 160 |
+| 5 | 53.1 – 80 | 107.1 – 160 | 160.1 – 240 |
+| 6 | > 80 | > 160 | > 240 |
+
+**Notes:**
+- Only 30, 60, or 90 cm sampling depth is supported. Other values produce an error.
+- Use the resulting `sns_index` as the `--sns-index` argument to `recommend` or `nitrogen`.
+- For the arable equivalent (Table 4.10 thresholds), use the `sns-smn` command instead.
+
+---
+
 ### organic
 
 Calculate nutrients supplied by an organic material application.
@@ -895,10 +1062,10 @@ rb209 list-crops [--category CATEGORY] [--format FORMAT]
 
 | Argument | Required | Type | Valid Values | Default | Description |
 |----------|----------|------|--------------|---------|-------------|
-| `--category` | No | string | `arable`, `grassland`, `potatoes` | -- | Filter to a single crop category |
+| `--category` | No | string | `arable`, `grassland`, `potatoes`, `vegetables` | -- | Filter to a single crop category |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
-**Example (table, all crops):**
+**Example (table, all crops — arable/grassland/potatoes shown; vegetable section truncated):**
 
 ```
 $ rb209 list-crops
@@ -935,6 +1102,57 @@ Available Crops
     potatoes-early                 Potatoes (early)
     potatoes-maincrop              Potatoes (maincrop)
     potatoes-seed                  Potatoes (seed)
+
+  VEGETABLES
+  --------------------------------------------------
+    veg-asparagus                  Asparagus (subsequent years)
+    veg-asparagus-est              Asparagus (establishment year)
+    veg-beans-broad                Broad Beans
+    ... (33 vegetable crops total — use --category vegetables to list all)
+```
+
+**Example (table, filtered to vegetables):**
+
+```
+$ rb209 list-crops --category vegetables
+Available Crops
+===============
+
+  VEGETABLES
+  --------------------------------------------------
+    veg-asparagus                  Asparagus (subsequent years)
+    veg-asparagus-est              Asparagus (establishment year)
+    veg-beans-broad                Broad Beans
+    veg-beans-dwarf                Dwarf/Runner Beans (seedbed N)
+    veg-beetroot                   Beetroot
+    veg-brussels-sprouts           Brussels Sprouts
+    veg-bulbs                      Bulbs and Bulb Flowers
+    veg-cabbage-head-post-dec      Head Cabbage (post-31 Dec)
+    veg-cabbage-head-pre-dec       Head Cabbage (pre-31 Dec)
+    veg-cabbage-storage            Storage Cabbage
+    veg-calabrese                  Calabrese
+    veg-carrots                    Carrots
+    veg-cauliflower-summer         Cauliflower (summer/autumn)
+    veg-cauliflower-winter-seedbed Cauliflower (winter — seedbed N)
+    veg-cauliflower-winter-topdress Cauliflower (winter — top dressing N)
+    veg-celery-seedbed             Self-blanching Celery (seedbed N)
+    veg-collards-post-dec          Collards (post-31 Dec)
+    veg-collards-pre-dec           Collards (pre-31 Dec)
+    veg-coriander                  Coriander
+    veg-courgettes-seedbed         Courgettes (seedbed N)
+    veg-leeks                      Leeks
+    veg-lettuce-baby               Lettuce (baby leaf)
+    veg-lettuce-whole              Lettuce (whole head)
+    veg-mint                       Mint (subsequent years)
+    veg-mint-est                   Mint (establishment year)
+    veg-onions-bulb                Bulb Onions
+    veg-onions-salad               Salad Onions
+    veg-peas-market                Peas (market pick)
+    veg-radish                     Radish
+    veg-rocket                     Wild Rocket
+    veg-swedes                     Swedes
+    veg-sweetcorn                  Sweetcorn
+    veg-turnips-parsnips           Turnips and Parsnips
 ```
 
 **Example (JSON, filtered to arable):**
@@ -959,7 +1177,7 @@ Returns a JSON array of objects, each with `value`, `name`, and `category` field
 |-------|------|-------------|
 | `value` | string | CLI argument value to pass to `--crop` |
 | `name` | string | Human-readable display name |
-| `category` | string | One of `arable`, `grassland`, `potatoes` |
+| `category` | string | One of `arable`, `grassland`, `potatoes`, `vegetables` |
 
 ---
 
@@ -1014,7 +1232,7 @@ Available Organic Materials
 
 ### Crops
 
-22 crops in 3 categories. Use the **Value** column as the `--crop` argument.
+55 crops in 4 categories. Use the **Value** column as the `--crop` argument.
 
 **Arable (15):**
 
@@ -1053,6 +1271,44 @@ Available Organic Materials
 | `potatoes-maincrop` | Potatoes (maincrop) |
 | `potatoes-seed` | Potatoes (seed) |
 
+**Vegetables (33) — RB209 Section 6:**
+
+| Value | Display Name | Notes |
+|-------|-------------|-------|
+| `veg-asparagus-est` | Asparagus (establishment year) | Year 1 only |
+| `veg-asparagus` | Asparagus (subsequent years) | Year 2 benchmark; see TODO.md for year 3+ |
+| `veg-brussels-sprouts` | Brussels Sprouts | |
+| `veg-cabbage-storage` | Storage Cabbage | |
+| `veg-cabbage-head-pre-dec` | Head Cabbage (pre-31 Dec) | |
+| `veg-cabbage-head-post-dec` | Head Cabbage (post-31 Dec) | |
+| `veg-collards-pre-dec` | Collards (pre-31 Dec) | |
+| `veg-collards-post-dec` | Collards (post-31 Dec) | |
+| `veg-cauliflower-summer` | Cauliflower (summer/autumn) | |
+| `veg-cauliflower-winter-seedbed` | Cauliflower (winter — seedbed N) | |
+| `veg-cauliflower-winter-topdress` | Cauliflower (winter — top dressing N) | |
+| `veg-calabrese` | Calabrese | |
+| `veg-celery-seedbed` | Self-blanching Celery (seedbed N) | |
+| `veg-peas-market` | Peas (market pick) | N = 0 at all indices (N-fixing) |
+| `veg-beans-broad` | Broad Beans | N = 0 at all indices (N-fixing) |
+| `veg-beans-dwarf` | Dwarf/Runner Beans (seedbed N) | N = 0 at all indices (N-fixing) |
+| `veg-radish` | Radish | |
+| `veg-sweetcorn` | Sweetcorn | |
+| `veg-lettuce-whole` | Lettuce (whole head) | Nitrate note added |
+| `veg-lettuce-baby` | Lettuce (baby leaf) | Nitrate note added |
+| `veg-rocket` | Wild Rocket | Nitrate note added |
+| `veg-onions-bulb` | Bulb Onions | |
+| `veg-onions-salad` | Salad Onions | |
+| `veg-leeks` | Leeks | NVZ closed-period note added |
+| `veg-beetroot` | Beetroot | |
+| `veg-swedes` | Swedes | |
+| `veg-turnips-parsnips` | Turnips and Parsnips | |
+| `veg-carrots` | Carrots | |
+| `veg-bulbs` | Bulbs and Bulb Flowers | |
+| `veg-coriander` | Coriander | |
+| `veg-mint-est` | Mint (establishment year) | |
+| `veg-mint` | Mint (subsequent years) | |
+| `veg-courgettes-seedbed` | Courgettes (seedbed N) | |
+
 ### Soil Types
 
 | Value | Description |
@@ -1063,6 +1319,37 @@ Available Organic Materials
 | `organic` | Peaty, organic soils |
 
 Used by `sns`, `sns-ley`, `lime`, and accepted by those commands via `--soil-type`. Note that `sns-ley` only accepts `light`, `medium`, and `heavy` (organic soils are not covered by Table 4.6).
+
+### Vegetable Soil Types
+
+Used by the `veg-sns` command via `--soil-type`. These correspond to the four mineral soil columns in Tables 6.2–6.4, plus advisory values for organic and peat soils.
+
+| Value | Description |
+|-------|-------------|
+| `light-sand` | Light sandy or shallow soils |
+| `medium` | Medium loamy soils |
+| `deep-clay` | Deep clay soils |
+| `deep-silt` | Deep silty soils |
+| `organic` | Organic soils — SNS Index 4 returned with advisory note |
+| `peat` | Peat soils — SNS Index 5 returned with advisory note |
+
+### Vegetable Previous Crops
+
+Used by the `veg-sns` command via `--previous-crop`. These 11 categories are specific to Section 6 of RB209 and differ from the arable previous-crop categories used by `sns`.
+
+| Value | Previous Crop Category |
+|-------|----------------------|
+| `beans` | Beans |
+| `cereals` | Cereals |
+| `forage-cut` | Forage (cut, e.g. silage) |
+| `oilseed-rape` | Oilseed Rape |
+| `peas` | Peas |
+| `potatoes` | Potatoes |
+| `sugar-beet` | Sugar Beet |
+| `uncropped` | Uncropped / bare fallow |
+| `veg-low-n` | Vegetables — low N residue (e.g. root crops) |
+| `veg-medium-n` | Vegetables — medium N residue |
+| `veg-high-n` | Vegetables — high N residue (e.g. leafy brassicas) |
 
 ### Previous Crops and N-Residue Categories
 
@@ -1203,6 +1490,12 @@ Several commands add contextual advisory notes to their output alongside the num
 | Arable crop on `light` soil with N + K2O > 150 kg/ha | Combine-drill seedbed limit warning |
 | `--ber` provided and crop is wheat or barley | N adjusted for break-even ratio with adjustment from default BER 5.0 |
 | N > 0 and crop has a timing schedule defined | Directs user to `rb209 timing` for N application timing guidance |
+| Any vegetable crop at K Index 2 | Explains K Index 2 split (2- vs 2+) and suggests `--k-upper-half` flag when soil K is in the upper half (181–240 mg/l) |
+| `veg-celery-seedbed` crop | Reminds user to apply a top-dressing N application in addition to the seedbed N |
+| `veg-asparagus` (subsequent years) | Notes that year 3+ N rate (40–80 kg/ha) varies by winter rainfall and cutting intensity; current rate is the year-2 benchmark |
+| `veg-lettuce-whole`, `veg-lettuce-baby`, `veg-rocket` | Notes legal nitrate limits for lettuce and rocket under food safety legislation |
+| `veg-leeks` crop | Notes the NVZ closed period for autumn/winter N applications |
+| Vegetable crops with seedbed N cap (most vegetable slugs) | Notes the 100 kg N/ha maximum for seedbed N on light soils |
 
 **`lime` command notes (when lime is required):**
 
