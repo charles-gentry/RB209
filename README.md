@@ -2,7 +2,7 @@
 
 A command-line tool for calculating fertiliser recommendations for UK agricultural crops, implementing the RB209 9th edition tables from Defra/AHDB.
 
-- **55 crop types** across arable, grassland, potato, and vegetable categories
+- **56 crop types** across arable, grassland, potato, and vegetable categories
 - Nitrogen, phosphorus, potassium, magnesium, sulfur, and lime recommendations
 - Soil Nitrogen Supply (SNS) index via field assessment (Tables 4.3–4.5) or direct SMN measurement
 - **Vegetable SNS** via Tables 6.2–6.4 (11 previous-crop categories, 4 mineral soil columns) using the new `veg-sns` command; SMN conversion via Table 6.6 using `veg-smn`
@@ -12,7 +12,7 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 - Crop history support — `calculate_sns` accepts an optional `grass_history` parameter to automatically combine field-assessment and Table 4.6 results when the previous crop followed a grass ley (e.g. winter wheat after spring barley after a 2-year ley)
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for all major livestock manures and biosolids (RB209 Section 2 Tables 2.3, 2.6, 2.9, 2.12, 2.15)
 - Contextual advisory notes — NVZ N-max warnings, potash split advice for potatoes and grass silage, hypomagnesaemia risk on grassland, clover N-fixation inhibition, over-liming trace-element warnings, combine-drill seedbed limit on sandy soils, lime-before-potatoes common scab risk, vegetable seedbed N cap, leeks NVZ closed period, lettuce/rocket nitrate limits, celery top-dressing reminder
-- **Nitrogen application timing** — `timing` command returns per-dressing schedule and amounts for all major crop types, taking into account the total N rate (single vs split dressings) and soil type (e.g. potatoes on light soils)
+- **Nitrogen application timing** — `timing` command returns per-dressing schedule and amounts for all major crop types including all 34 vegetable crops, taking into account the total N rate (single vs split dressings) and soil type; vegetable crops use the RB209 Section 6 seedbed-cap rule (≤100 kg N/ha in seedbed, remainder as top dressing after establishment)
 - **Break-even ratio (BER) adjustment** — optional `--ber` flag on `recommend` and `nitrogen` commands adjusts cereal N recommendations based on the fertiliser cost to grain price ratio (RB209 Tables 4.25–4.26), with linear interpolation between table values
 - Human-readable ASCII tables or machine-readable JSON output
 - Pure Python -- no external dependencies
@@ -118,7 +118,7 @@ See [CLI.md](CLI.md) for the full command reference with all arguments and examp
 
 **Grassland** -- grazed, silage, hay, grazed with one silage cut
 
-**Vegetables** (33 crops, RB209 Section 6) -- asparagus (establishment / subsequent), Brussels sprouts, storage cabbage, head cabbage (pre/post 31 Dec), collards (pre/post 31 Dec), cauliflower (summer/autumn, winter seedbed, winter top dressing), calabrese, self-blanching celery (seedbed N), peas (market pick), broad beans, dwarf/runner beans (seedbed N), radish, sweetcorn, lettuce (whole head / baby leaf), wild rocket, bulb onions, salad onions, leeks, beetroot, swedes, turnips and parsnips, carrots, bulbs and bulb flowers, coriander, mint (establishment / subsequent), courgettes (seedbed N)
+**Vegetables** (34 crops, RB209 Section 6) -- asparagus (establishment / subsequent), Brussels sprouts, storage cabbage, head cabbage (pre/post 31 Dec), collards (pre/post 31 Dec), cauliflower (summer/autumn, winter seedbed, winter top dressing), calabrese, self-blanching celery (seedbed N), peas (market pick), broad beans, dwarf/runner beans (seedbed N), radish, sweetcorn, lettuce (whole head / baby leaf), wild rocket, bulb onions, salad onions, leeks, beetroot, swedes, turnips and parsnips, carrots, bulbs and bulb flowers, coriander, mint (establishment / subsequent), courgettes (seedbed N / top dressing N)
 
 Run `rb209 list-crops --category vegetables` to see all vegetable slugs.
 

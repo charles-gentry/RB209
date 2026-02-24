@@ -961,11 +961,17 @@ def nitrogen_timing(
     rule_splits = matched_rule["splits"]
     notes: list[str] = list(matched_rule.get("notes", []))
 
-    # Compute dressing amounts from fractions.
+    # Compute dressing amounts from fractions or fixed amounts.
     amounts: list[int] = []
     for i, s in enumerate(rule_splits):
         if i < len(rule_splits) - 1:
-            amounts.append(round(s["fraction"] * total_n))
+            if "fixed_amount" in s:
+                # Absolute cap: use min(fixed_amount, remaining N) so the last
+                # split is never negative even when total_n < fixed_amount.
+                remaining = round(total_n) - sum(amounts)
+                amounts.append(max(0, min(int(s["fixed_amount"]), remaining)))
+            else:
+                amounts.append(round(s["fraction"] * total_n))
         else:
             # Last split gets the remainder to preserve the total.
             amounts.append(round(total_n) - sum(amounts))

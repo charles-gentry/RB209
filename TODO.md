@@ -22,13 +22,21 @@ current VEG.md implementation plan, or are planned for future work.
   asparagus, brassicas, celery, alliums, and root vegetables.  These are
   diagnostic reference tables only; no kg/ha values to compute.
 
-### Nitrogen Timing Rules for Vegetable Crops
+### ~~Nitrogen Timing Rules for Vegetable Crops~~ ✓ Implemented
 - **Source**: RB209 Section 6, per-crop notes
-- **Description**: The current implementation captures seedbed/top-dressing
-  splits via separate crop slugs (e.g. `veg-cauliflower-winter-seedbed` vs
-  `veg-cauliflower-winter-topdress`).  A dedicated vegetable timing module
-  in `timing.py` would provide structured split-schedule output via the
-  `timing` command, consistent with arable crops.
+- **Status**: Implemented in `rb209/data/timing.py`.  Timing rules cover:
+  - Asparagus establishment (three equal split dressings)
+  - Asparagus year 2 (single dressing by end-Feb/early-Mar)
+  - All seedbed-cap crops: ≤100 kg N/ha in seedbed; remainder as top
+    dressing after establishment (`fixed_amount` engine support added)
+  - Cauliflower winter split slugs (separate seedbed / top-dressing rules)
+  - Self-blanching celery (seedbed only; top-dressing note)
+  - Bulbs (single top dressing before emergence)
+  - Onions (bulb onions: seedbed cap; salad onions: single at sowing)
+  - Leeks (seedbed cap with NVZ closed-period note)
+  - Lettuce / rocket (single at transplanting with nitrate note)
+  - Mint (single in spring)
+  - N-fixing crops (peas, broad beans — not applicable note)
 
 ### Sodium Recommendations
 - **Source**: RB209 Section 6, asparagus and celery notes
@@ -52,16 +60,16 @@ current VEG.md implementation plan, or are planned for future work.
 - **Description**: From year 3 onward, asparagus N rate (40–80 kg N/ha)
   depends on winter rainfall and cutting intensity.  The current
   `veg-asparagus` slug returns the year-2 benchmark of 120 kg N/ha for
-  all indices.  A more complete implementation would accept a `year`
-  parameter and a measured winter-rainfall amount to compute the
-  year 3+ rate.
+  all indices; the `timing` command adds a note directing users to seek
+  FACTS advice for year 3+.  A more complete implementation would accept a
+  `year` parameter and a measured winter-rainfall amount to compute the
+  year 3+ rate (no fixed per-index table exists in RB209).
 
-### Courgette Top-Dressing Amount
+### ~~Courgette Top-Dressing Amount~~ ✓ Implemented
 - **Source**: RB209 Table 6.26
-- **Description**: In addition to the seedbed N (captured by
-  `veg-courgettes-seedbed`), up to 75 kg N/ha top dressing may be required.
-  A `veg-courgettes-topdress` slug with its own recommendation table has
-  not been added.
+- **Status**: Implemented.  `veg-courgettes-topdress` crop slug added.
+  Returns 75 kg N/ha at SNS 0–3, 0 at SNS 4–6.  P2O5 and K2O are 0
+  (applied at seedbed stage); S is 0.
 
 ---
 
@@ -85,4 +93,4 @@ current VEG.md implementation plan, or are planned for future work.
 
 ---
 
-*Last updated: 2026-02-23. See VEG.md for the original implementation plan.*
+*Last updated: 2026-02-24. See VEG.md for the original implementation plan.*

@@ -73,7 +73,8 @@ SULFUR_RECOMMENDATIONS: dict[str, float] = {
     "veg-coriander":          25,
     "veg-mint-est":           25,
     "veg-mint":               25,
-    "veg-courgettes-seedbed": 25,
+    "veg-courgettes-seedbed":   25,
+    "veg-courgettes-topdress":   0,  # S applied at seedbed; none at topdress
 
     # N-fixing vegetable crops — no S response documented
     "veg-peas-market":  0,

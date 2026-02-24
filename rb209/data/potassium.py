@@ -205,6 +205,11 @@ POTASSIUM_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("veg-courgettes-seedbed", 0): 250, ("veg-courgettes-seedbed", 1): 200,
     ("veg-courgettes-seedbed", 2): 150, ("veg-courgettes-seedbed", 3): 0,
     ("veg-courgettes-seedbed", 4): 0,
+
+    # Courgettes top dressing — K2O applied at seedbed; none at topdress
+    ("veg-courgettes-topdress", 0): 0, ("veg-courgettes-topdress", 1): 0,
+    ("veg-courgettes-topdress", 2): 0, ("veg-courgettes-topdress", 3): 0,
+    ("veg-courgettes-topdress", 4): 0,
 }
 
 # Upper-half K Index 2 values (2+, soil K 181-240 mg/l).
@@ -241,4 +246,5 @@ POTASSIUM_VEG_K2_UPPER: dict[str, float] = {
     "veg-mint-est":                    50,
     "veg-mint":                       130,
     "veg-courgettes-seedbed":         100,
+    "veg-courgettes-topdress":          0,
 }
