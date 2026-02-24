@@ -8,13 +8,17 @@ current VEG.md implementation plan, or are planned for future work.
 
 ## Vegetable Crops (Section 6)
 
-### Yield Adjustments for Vegetable Crops
-- **Source**: RB209 Table 6.27
-- **Description**: Per-crop dry-matter, harvest index, and mineralisation
-  parameters needed to scale N/P/K recommendations by expected yield.
-  The methodology requires additional crop-specific data not yet integrated
-  into `yield_adjustments.py`.
-- **Affected module**: `rb209/data/yield_adjustments.py`
+### ~~Yield Adjustments for Vegetable Crops~~ ✓ Implemented
+- **Source**: RB209 Table 6.27 (N baseline and uptake), Table 6.8 (P2O5/K2O offtake)
+- **Status**: Implemented in `rb209/data/yield_adjustments.py`.  19 vegetable
+  crop slugs added with `baseline_yield`, `n_adjust_per_t`, `p_adjust_per_t`,
+  and `k_adjust_per_t` parameters.  The N adjustment per tonne is derived from
+  `N_uptake / (baseline_yield × 0.60)` (linear approximation for small yield
+  changes, 60 % fertiliser recovery as per RB209 Section 6).  P2O5 and K2O
+  adjustments use the per-tonne offtake values from Table 6.8; where no
+  Table 6.8 entry exists those adjustments are 0.  Crops explicitly excluded
+  by the Table 6.27 footnote (insufficient data) remain out of scope:
+  asparagus, celery, peas/beans, sweetcorn, courgettes, and bulbs.
 
 ### Leaf Analysis Tables
 - **Source**: RB209 Tables 6.10, 6.13, 6.15, 6.21, 6.23
@@ -94,3 +98,5 @@ current VEG.md implementation plan, or are planned for future work.
 ---
 
 *Last updated: 2026-02-24. See VEG.md for the original implementation plan.*
+
+<!-- Yield adjustment implemented 2026-02-24 -->
