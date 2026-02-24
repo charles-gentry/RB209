@@ -117,6 +117,7 @@ rb209 recommend --crop CROP --sns-index N --p-index N --k-index N [options]
 | `--straw-removed` | No | flag | -- | true | Straw removed from field (cereals only; mutually exclusive with `--straw-incorporated`) |
 | `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
+| `--expected-yield` | No | float | any positive value | -- | Expected yield (t/ha). When provided and the crop has yield adjustment data (see [Yield-Adjusted Crops](#yield-adjusted-crops)), adjusts N, P2O5, and K2O recommendations based on the difference from the RB209 baseline yield. An error is raised if the crop does not support yield adjustment. |
 | `--ber` | No | float | any positive value | -- | Break-even ratio (fertiliser N cost £/kg ÷ grain value £/kg). Default: 5.0. Only affects wheat and barley N recommendations. Values between table entries are linearly interpolated. |
 | `--k-upper-half` / `-ku` | No | flag | -- | false | Use the K Index 2+ rate (181–240 mg/l) for vegetable crops at K Index 2. By default the lower 2- rate (121–180 mg/l) is used. Has no effect for non-vegetable crops or K indices other than 2. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
@@ -175,6 +176,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 - P, K, and Mg indices above 4 are clamped to 4, which returns 0 kg/ha for all three nutrients.
 - The `notes` array in the output may include contextual advisory notes beyond the basic crop note. See [Contextual Advisory Notes](#contextual-advisory-notes) for the full list of notes that can appear.
 - The `--ber` option adjusts the N recommendation for wheat and barley crops based on the economic break-even ratio (BER = fertiliser N cost £/kg ÷ grain value £/kg). The default BER is 5.0 (no adjustment). Lower BER values (cheap fertiliser relative to grain) increase the N recommendation; higher BER values decrease it. BER values between the table entries (2, 3, 4, 5, 6, 7, 8, 10) are linearly interpolated. For non-cereal crops, `--ber` is accepted but has no effect.
+- The `--expected-yield` option adjusts N, P2O5, and K2O recommendations when the expected fresh yield differs from the RB209 baseline. See [Yield-Adjusted Crops](#yield-adjusted-crops) for the list of supported crops. An error is raised if the crop does not appear in that list.
 
 ---
 
@@ -195,6 +197,7 @@ rb209 nitrogen --crop CROP --sns-index N [--format FORMAT]
 | `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
 | `--sns-index` | Yes | int | `0` to `6` | -- | Soil Nitrogen Supply index |
 | `--soil-type` | No | string | `light`, `medium`, `heavy`, `organic` | -- | Soil type for soil-specific N recommendation. When provided for a crop that has no soil-specific data, falls back to the generic recommendation table. |
+| `--expected-yield` | No | float | any positive value | -- | Expected yield (t/ha) for yield-adjusted N recommendation. See [Yield-Adjusted Crops](#yield-adjusted-crops). |
 | `--ber` | No | float | any positive value | -- | Break-even ratio (fertiliser N cost £/kg ÷ grain value £/kg). Default: 5.0. Only affects wheat and barley. |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
@@ -251,6 +254,7 @@ rb209 phosphorus --crop CROP --p-index N [--format FORMAT]
 |----------|----------|------|--------------|---------|-------------|
 | `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
 | `--p-index` | Yes | int | `0` to `9` | -- | Soil phosphorus index (clamped to 4) |
+| `--expected-yield` | No | float | any positive value | -- | Expected yield (t/ha) for yield-adjusted P2O5 recommendation. See [Yield-Adjusted Crops](#yield-adjusted-crops). |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table):**
@@ -299,6 +303,7 @@ rb209 potassium --crop CROP --k-index N [options]
 | `--k-index` | Yes | int | `0` to `9` | -- | Soil potassium index (clamped to 4) |
 | `--straw-removed` | No | flag | -- | true | Straw removed (cereals only; mutually exclusive with `--straw-incorporated`) |
 | `--straw-incorporated` | No | flag | -- | false | Straw incorporated (cereals only; mutually exclusive with `--straw-removed`) |
+| `--expected-yield` | No | float | any positive value | -- | Expected yield (t/ha) for yield-adjusted K2O recommendation. See [Yield-Adjusted Crops](#yield-adjusted-crops). |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (straw removed, default):**
@@ -1385,6 +1390,50 @@ Used by the `sns` command via `--previous-crop`. The previous crop determines an
 | `grass-1-2yr` | high |
 | `grass-3-5yr` | high |
 | `grass-long-term` | very-high |
+
+### Yield-Adjusted Crops
+
+Crops that support `--expected-yield` on the `recommend`, `nitrogen`, `phosphorus`, and `potassium` commands. When `--expected-yield` is supplied for any other crop, the command exits with an error listing the supported crops.
+
+N adjustment uses the formula `Δkg/ha = (expected_yield − baseline) × n_adjust_per_t`. For vegetable crops, `n_adjust_per_t` is derived from RB209 Table 6.27 as `N_uptake / (baseline_yield × 0.60)` (60 % fertiliser recovery). P2O5 and K2O adjustments use per-tonne offtake values from Table 6.8; crops without Table 6.8 data have `p_adjust_per_t = k_adjust_per_t = 0`. All recommendations are clamped to ≥ 0 kg/ha.
+
+**Arable/potato crops (Table 4.12 / Section 5):**
+
+| Crop | Baseline yield (t/ha) | N adj (kg/t) | P2O5 adj (kg/t) | K2O adj (kg/t) |
+|------|-----------------------|--------------|-----------------|----------------|
+| `winter-wheat-feed` | 8.0 | 20.0 | 7.0 | 10.5 |
+| `winter-wheat-milling` | 8.0 | 20.0 | 7.0 | 10.5 |
+| `winter-oats` | 6.0 | 20.0 | 7.0 | 12.0 |
+| `potatoes-maincrop` | 50.0 | 0 | 0 | 5.8 |
+| `potatoes-early` | 30.0 | 0 | 0 | 5.8 |
+
+**Vegetable crops (Table 6.27 + Table 6.8):**
+
+| Crop | Baseline yield (t/ha) | N adj (kg/t) | P2O5 adj (kg/t) | K2O adj (kg/t) |
+|------|-----------------------|--------------|-----------------|----------------|
+| `veg-brussels-sprouts` | 20.3 | 30.2 | 2.6 | 6.3 |
+| `veg-cabbage-storage` | 110.0 | 5.7 | 0.9 | 3.6 |
+| `veg-cabbage-head-pre-dec` | 60.0 | 7.5 | 0.9 | 3.6 |
+| `veg-cabbage-head-post-dec` | 53.0 | 6.4 | 0.9 | 3.6 |
+| `veg-collards-pre-dec` | 20.0 | 21.7 | 0.9 | 3.6 |
+| `veg-collards-post-dec` | 30.0 | 16.7 | 0.9 | 3.6 |
+| `veg-cauliflower-summer` | 30.6 | 14.1 | 1.4 | 4.8 |
+| `veg-calabrese` | 16.3 | 23.1 | 1.4 | 4.8 |
+| `veg-lettuce-whole` | 45.5 | 6.0 | 0 | 0 |
+| `veg-radish` | 50.0 | 3.3 | 0 | 0 |
+| `veg-onions-bulb` | 60.5 | 4.1 | 0.7 | 1.8 |
+| `veg-onions-salad` | 30.0 | 6.3 | 0.7 | 1.8 |
+| `veg-leeks` | 47.0 | 9.9 | 0 | 0 |
+| `veg-beetroot` | 60.0 | 7.5 | 1.0 | 4.5 |
+| `veg-swedes` | 84.4 | 4.4 | 0.7 | 2.4 |
+| `veg-turnips-parsnips` | 48.0 | 8.4 | 0 | 0 |
+| `veg-carrots` | 150.0 | 2.0 | 0.7 | 3.0 |
+| `veg-coriander` | 48.0 | 4.5 | 0.8 | 5.5 |
+| `veg-mint` | 25.0 | 10.2 | 1.0 | 3.9 |
+
+Crops not listed (asparagus, celery, peas/beans, sweetcorn, courgettes, bulbs, lettuce baby, rocket, sweetcorn, mint establishment) are excluded because RB209 Table 6.27 explicitly states insufficient data to derive these parameters.
+
+---
 
 ### Rainfall Categories
 
