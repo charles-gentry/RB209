@@ -1431,7 +1431,7 @@ N adjustment uses the formula `Δkg/ha = (expected_yield − baseline) × n_adju
 | `veg-coriander` | 48.0 | 4.5 | 0.8 | 5.5 |
 | `veg-mint` | 25.0 | 10.2 | 1.0 | 3.9 |
 
-Crops not listed (asparagus, celery, peas/beans, sweetcorn, courgettes, bulbs, lettuce baby, rocket, sweetcorn, mint establishment) are excluded because RB209 Table 6.27 explicitly states insufficient data to derive these parameters.
+Crops not listed (asparagus, celery, peas/beans, sweetcorn, courgettes, bulbs, lettuce baby, rocket, mint establishment) are excluded because RB209 Table 6.27 explicitly states insufficient data to derive these parameters.
 
 ---
 
