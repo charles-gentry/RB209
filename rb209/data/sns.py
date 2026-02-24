@@ -268,6 +268,15 @@ VEG_SNS_LOOKUP: dict[tuple[str, str, str], int] = {
     ("veg-high-n",   "deep-silt",  "high"): 3,
 }
 
+# Tables 6.2–6.4: Advisory SNS index ranges for organic and peat soils.
+# These soils are not differentiated by previous crop or rainfall in the
+# tables; instead, RB209 states a range and directs users to a FACTS
+# Qualified Adviser.  Key: soil_type -> (min_index, representative_index, max_index)
+VEG_SNS_ORGANIC_ADVISORY: dict[str, tuple[int, int, int]] = {
+    "organic": (3, 4, 6),  # "All crops in SNS Index 3, 4, 5 or 6"
+    "peat":    (4, 5, 6),  # "All crops in SNS Index 4, 5 or 6"
+}
+
 # Table 6.6: SMN (kg N/ha) to SNS index thresholds for vegetable crops.
 # Key: depth_cm -> list of (upper_bound, sns_index) in ascending order.
 # Values above the last entry map to index 6.

@@ -600,17 +600,18 @@ $ rb209 veg-sns --previous-crop cereals --soil-type medium --rainfall moderate
 | `previous_crop` | string | Previous crop value as provided |
 | `soil_type` | string | Soil type as provided |
 | `rainfall` | string | Rainfall category as provided |
-| `method` | string | Always `"veg-field-assessment"` for mineral soils; `"veg-field-assessment"` with advisory note for organic/peat soils |
+| `method` | string | `"veg-field-assessment"` for mineral soils; `"veg-field-assessment-advisory"` for organic/peat soils |
 | `smn` | null | Not applicable for field-assessment method |
 | `crop_n` | null | Not applicable |
 | `sns_value` | null | Not applicable |
-| `notes` | string[] | Describes the table lookup; for organic/peat soils, advises consulting a FACTS Qualified Adviser |
+| `notes` | string[] | Describes the table lookup; for organic/peat soils, three structured advisory notes are returned |
 
 **Notes:**
 - The vegetable SNS lookup uses different previous-crop categories from the arable `sns` command. See [Vegetable Previous Crops](#vegetable-previous-crops) for the full list.
 - Rainfall bands differ from arable: `low` maps to Table 6.2, `moderate` to Table 6.3, `high` to Table 6.4.
-- For **organic** soils, SNS Index 4 is returned with a note that organic soils typically have SNS 3–6 and a FACTS Qualified Adviser should be consulted.
-- For **peat** soils, SNS Index 5 is returned with a similar advisory note.
+- For **organic** soils, Tables 6.2–6.4 do not differentiate by previous crop or rainfall. SNS Index 4 is returned as a representative mid-range estimate (full range: 3–6). The `method` field is set to `"veg-field-assessment-advisory"` and three notes are generated: the range from the table, a recommendation to use `veg-smn` for a site-specific index, and a reminder to consult a FACTS Qualified Adviser.
+- For **peat** soils, the same advisory approach applies with SNS Index 5 (range: 4–6).
+- For organic and peat soils, the `veg-smn` command provides a more precise index from a soil mineral nitrogen measurement and should be preferred over the field assessment.
 - Use the resulting `sns_index` as the `--sns-index` argument to `recommend` or `nitrogen`.
 
 ---
@@ -1350,8 +1351,8 @@ Used by the `veg-sns` command via `--soil-type`. These correspond to the four mi
 | `medium` | Medium loamy soils |
 | `deep-clay` | Deep clay soils |
 | `deep-silt` | Deep silty soils |
-| `organic` | Organic soils — SNS Index 4 returned with advisory note |
-| `peat` | Peat soils — SNS Index 5 returned with advisory note |
+| `organic` | Organic soils — Tables 6.2–6.4 give SNS Index 3–6; representative index 4 returned with `method="veg-field-assessment-advisory"` |
+| `peat` | Peat soils — Tables 6.2–6.4 give SNS Index 4–6; representative index 5 returned with `method="veg-field-assessment-advisory"` |
 
 ### Vegetable Previous Crops
 
@@ -1570,6 +1571,17 @@ Several commands add contextual advisory notes to their output alongside the num
 | Target pH > 7.5 | Mn deficiency risk above pH 7.5 |
 | `soil_type="light"` and target pH > 6.5 | Mn deficiency more likely above pH 6.5 on sandy soils |
 | `soil_type="organic"` and target pH > 6.0 | Mn deficiency more likely above pH 6.0 on organic/peaty soils |
+
+**`veg-sns` command notes (organic/peat soils only):**
+
+| Trigger | Note content |
+|---------|-------------|
+| `--soil-type organic` | Range note: "Tables 6.2–6.4 do not provide a crop- or rainfall-specific SNS index for organic soils. All crops fall in SNS Index 3–6 depending on site conditions." |
+| `--soil-type organic` | SMN note: "SNS Index 4 is returned as a representative mid-range estimate. Use the 'veg-smn' command with a soil mineral nitrogen (SMN) measurement for a site-specific index." |
+| `--soil-type organic` | FACTS note: "Consult a FACTS Qualified Adviser before applying nitrogen on organic soils." |
+| `--soil-type peat` | Range note: "…peat soils. All crops fall in SNS Index 4–6 depending on site conditions." |
+| `--soil-type peat` | SMN note: "SNS Index 5 is returned as a representative mid-range estimate…" |
+| `--soil-type peat` | FACTS note: "Consult a FACTS Qualified Adviser before applying nitrogen on peat soils." |
 
 **`organic` command notes:**
 
