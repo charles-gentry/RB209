@@ -2,6 +2,11 @@
 
 Source reference: `ref/section6_vegetables.md` (RB209 9th edition, updated January 2021).
 
+**Implementation status: COMPLETE** — All 11 steps below have been implemented
+and are covered by the 471-test suite (all passing).  Post-plan additions
+(yield adjustments from Table 6.27, nitrogen timing rules, courgette top-dress
+slug) are documented in the "Out of Scope" section at the bottom and in TODO.md.
+
 ---
 
 ## Overview
@@ -768,20 +773,26 @@ Create a new test file covering:
 
 ## 12. Out of Scope
 
-The following are documented in Section 6 but are not part of this implementation plan:
+The following are documented in Section 6 but were not part of the original plan.
+Items marked ~~strikethrough~~ were subsequently implemented.
 
 - **Leaf analysis tables** (Tables 6.10, 6.13, 6.15, 6.21, 6.23) — reference only, no
-  recommendations to compute.
-- ~~**Yield adjustment data** (`Table 6.27`)~~ — **now implemented** in
+  recommendations to compute.  Remains out of scope.
+- ~~**Yield adjustment data** (Table 6.27)~~ — **Implemented** in
   `rb209/data/yield_adjustments.py`.  19 vegetable crop slugs support
   `--expected-yield` via N uptake / baseline / 60 % recovery (Table 6.27) and
-  per-tonne P2O5/K2O offtake (Table 6.8).  See TODO.md for excluded crops.
-- ~~**Nitrogen timing rules** for vegetable crops~~ — **now implemented** in
+  per-tonne P₂O₅/K₂O offtake (Table 6.8).  See TODO.md for excluded crops.
+- ~~**Nitrogen timing rules** for vegetable crops~~ — **Implemented** in
   `rb209/data/timing.py`.  All 34 vegetable crops have timing rules covering
   seedbed-cap splits, asparagus multi-year schedules, and per-crop calendar
   guidance.  See TODO.md for the full list of covered rules.
+- ~~**Courgette top-dressing slug**~~ — **Implemented** as `veg-courgettes-topdress`.
+  Returns 75 kg N/ha at SNS 0–3, 0 at SNS 4–6; P/K applied at seedbed only.
 - **Sodium recommendations** — Asparagus (up to 500 kg Na₂O/ha) and Celery (responsive
-  on most soils). Out of scope until a general sodium module is added.
+  on most soils).  Out of scope until a general sodium module is added.
 - **Micronutrient guidance** (Table 6.9) — qualitative risk factors only; no kg/ha values
-  to implement.
-- **Fertigation guidance** — advisory text only.
+  to implement.  Out of scope.
+- **Fertigation guidance** — advisory text only.  Out of scope.
+- **NVZ N-max limits for vegetable crops** — Schedule 8 whole-farm N-max values for
+  vegetable crop groups are not reproduced in the `ref/` source files.  Blocked
+  pending source data; see TODO.md.

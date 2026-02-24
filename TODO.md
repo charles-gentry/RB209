@@ -8,58 +8,76 @@ reference.  See VEG.md for the original implementation plan.
 
 ## Vegetable Crops (Section 6) — Pending
 
+The core Section 6 vegetable implementation is complete (all 34 crop slugs,
+full N/P/K/Mg/S tables, SNS/SMN commands, yield adjustments, timing rules,
+advisory notes, and `--k-upper-half` flag).  The items below are genuinely
+blocked by missing regulatory/reference data or are qualitative-only guidance
+with no quantitative values to implement.
+
 ### Asparagus Year 3+ Variable N Rate
 - **Source**: RB209 Table 6.11
+- **Status**: Blocked — no fixed per-SNS-index table exists in RB209.
 - **Description**: From year 3 onward, asparagus N rate (40–80 kg N/ha)
   depends on winter rainfall and cutting intensity.  The current
   `veg-asparagus` slug returns the year-2 benchmark of 120 kg N/ha for
   all indices; the `timing` command adds a note directing users to seek
   FACTS advice for year 3+.  A more complete implementation would accept a
   `year` parameter and a measured winter-rainfall amount to compute the
-  year 3+ rate (no fixed per-index table exists in RB209).
+  year 3+ rate — but no fixed per-index table exists in RB209 to back this.
+
+### NVZ N-max Limits for Vegetable Crops
+- **Source**: Defra Nitrate Pollution Prevention Regulations 2015, Schedule 8
+- **Status**: Blocked — Schedule 8 limits for vegetable crop groups are not
+  reproduced in any `ref/` source file.  Section 6 of the reference material
+  only mentions NVZ closed-period rules (for leeks); it does not tabulate
+  whole-farm N-max values by vegetable type.  When the Schedule 8 values are
+  available they should be added to `NVZ_NMAX` in `rb209/data/nitrogen.py`.
+- **Description**: Whole-farm N-max limits specific to vegetable crop types
+  are not populated in `NVZ_NMAX`.  The engine will not issue an N-max
+  warning for vegetable crops that exceed typical thresholds.
 
 ### Sodium Recommendations
 - **Source**: RB209 Section 6, asparagus and celery notes
+- **Status**: Blocked — requires a general sodium module (new nutrient type).
 - **Description**: Asparagus may require up to 500 kg Na₂O/ha; celery
   responds to sodium on most soils.  Sodium is not currently a supported
-  nutrient in the engine.  Requires a general sodium module.
+  nutrient in the engine.  Requires adding Na₂O to the nutrient model before
+  crop-specific recommendations can be exposed.
 
 ### Leaf Analysis Tables
 - **Source**: RB209 Tables 6.10, 6.13, 6.15, 6.21, 6.23
+- **Status**: Out of scope — diagnostic reference tables only; no kg/ha
+  values to compute.
 - **Description**: Reference ranges for leaf nutrient concentrations in
-  asparagus, brassicas, celery, alliums, and root vegetables.  These are
-  diagnostic reference tables only; no kg/ha values to compute.
+  asparagus, brassicas, celery, alliums, and root vegetables.
 
 ### Micronutrient Guidance
 - **Source**: RB209 Table 6.9
+- **Status**: Out of scope — qualitative guidance only; no kg/ha values.
 - **Description**: Qualitative risk factors for boron, molybdenum, manganese,
-  iron and other trace elements in vegetable crops.  Only qualitative
-  guidance is given in RB209; no kg/ha values to implement.
+  iron and other trace elements in vegetable crops.
 
 ### Fertigation Guidance
 - **Source**: RB209 Section 6 general notes
+- **Status**: Out of scope — advisory text only; no quantitative tables.
 - **Description**: Advisory text on applying nutrients through irrigation
-  systems.  Advisory only; no quantitative tables to implement.
+  systems.
+
+### Organic Soil Vegetable SNS — Full Field Assessment
+- **Status**: Partially addressed.  For organic and peat soils,
+  `calculate_veg_sns()` returns an advisory SNS Index (4 for organic, 5 for
+  peat) with a FACTS Qualified Adviser note — matching RB209 guidance.
+  A future enhancement could provide a structured SMN-based lookup using
+  `smn_to_sns_index_veg()` for these soils as the preferred method, but the
+  advisory-only approach is consistent with the Section 6 text.
 
 ---
 
 ## Other Sections — Pending
 
 ### Section 7 — Fruit, Vines, and Hops
-- Full nutrient recommendations for top fruit, soft fruit, vines, and hops
-  are not implemented.  Reference data is available in `ref/section7_fruit_vines_hops.md`.
-
-### NVZ N-max Limits for Vegetable Crops
-- **Source**: Defra NVZ guidance / RB209 Section 6 notes
-- **Description**: Whole-farm N-max limits specific to vegetable crop types
-  are not populated in `NVZ_NMAX`.  The engine will not issue an N-max
-  warning for vegetable crops that exceed typical thresholds.
-
-### Organic Soil Vegetable SNS — Full Field Assessment
-- For organic and peat soils, the vegetable SNS tables (6.2–6.4) are
-  replaced by an advisory note to consult a FACTS Qualified Adviser.
-  A future enhancement could provide a structured SMN-based lookup using
-  `smn_to_sns_index_veg()` for these soils as the preferred method.
+- **Status**: Out of scope for the current implementation cycle.
+- Reference data is available in `ref/section7_fruit_vines_hops.md`.
 
 ---
 
@@ -98,6 +116,13 @@ reference.  See VEG.md for the original implementation plan.
 - **Status**: Implemented.  `veg-courgettes-topdress` crop slug added.
   Returns 75 kg N/ha at SNS 0–3, 0 at SNS 4–6.  P2O5 and K2O are 0
   (applied at seedbed stage); S is 0.
+
+### ~~Section 6 Core Implementation~~ ✓
+- **Status**: Fully implemented across 11 implementation steps in VEG.md.
+  All 34 vegetable crop slugs are registered in `CROP_INFO` with full
+  N/P/K/Mg/S recommendation tables, SNS field-assessment and SMN-measurement
+  commands, K Index 2 split (`--k-upper-half`), advisory notes, and
+  471-test coverage.
 
 ---
 
