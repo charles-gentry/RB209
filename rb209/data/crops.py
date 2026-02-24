@@ -335,6 +335,12 @@ CROP_INFO: dict[str, dict] = {
         "name": "Courgettes (seedbed N)",
         "category": "vegetables",
         "has_straw_option": False,
-        "notes": "Up to 75 kg N/ha top dressing may also be required.",
+        "notes": "Up to 75 kg N/ha top dressing may also be required. See veg-courgettes-topdress.",
+    },
+    "veg-courgettes-topdress": {
+        "name": "Courgettes (top dressing N)",
+        "category": "vegetables",
+        "has_straw_option": False,
+        "notes": "Top dressing applied after establishment. P2O5 and K2O are applied in the seedbed; only N is included here.",
     },
 }

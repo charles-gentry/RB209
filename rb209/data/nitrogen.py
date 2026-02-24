@@ -425,6 +425,13 @@ NITROGEN_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("veg-courgettes-seedbed", 2): 100, ("veg-courgettes-seedbed", 3): 40,
     ("veg-courgettes-seedbed", 4): 0,   ("veg-courgettes-seedbed", 5): 0,
     ("veg-courgettes-seedbed", 6): 0,
+
+    # Table 6.26 — Courgettes (top dressing, up to 75 kg N/ha)
+    # Top dressing applied after establishment at SNS Index 0–3.
+    ("veg-courgettes-topdress", 0): 75, ("veg-courgettes-topdress", 1): 75,
+    ("veg-courgettes-topdress", 2): 75, ("veg-courgettes-topdress", 3): 75,
+    ("veg-courgettes-topdress", 4): 0,  ("veg-courgettes-topdress", 5): 0,
+    ("veg-courgettes-topdress", 6): 0,
 }
 
 NITROGEN_SOIL_SPECIFIC: dict[tuple[str, int, str], float] = {

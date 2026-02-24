@@ -347,3 +347,264 @@ NITROGEN_TIMING_RULES["grass-hay"] = [
         "notes": [],
     },
 ]
+
+# ── Vegetable crops — RB209 Section 6 ────────────────────────────────────────
+
+# ── Asparagus (establishment year) — RB209 S6 p.7 ────────────────────────────
+# Apply in three equal dressings: before sowing/planting, mid-June (crowns) or
+# mid-July (transplants) when the crop is fully established, and end-August.
+
+NITROGEN_TIMING_RULES["veg-asparagus-est"] = [
+    {
+        "splits": [
+            {"fraction": 1 / 3, "timing": "Before sowing or planting"},
+            {
+                "fraction": 1 / 3,
+                "timing": (
+                    "Mid-June (crowns) or mid-July (transplants) "
+                    "— when crop is fully established"
+                ),
+            },
+            {"fraction": 1 / 3, "timing": "End of August"},
+        ],
+        "notes": [
+            "Apply in three equal dressings throughout the establishment year "
+            "(RB209 S6).",
+        ],
+    },
+]
+
+# ── Asparagus (subsequent years, year 2) — RB209 S6 p.7 ──────────────────────
+# Year 2: apply 120 kg N/ha by end of February – early March.
+# Year 3+ rate (40–80 kg N/ha) depends on winter rainfall and cutting intensity.
+
+NITROGEN_TIMING_RULES["veg-asparagus"] = [
+    {
+        "splits": [
+            {"fraction": 1.0, "timing": "By end of February – early March"},
+        ],
+        "notes": [
+            "Year-2 benchmark rate. "
+            "For year 3 onward, the rate (40–80 kg N/ha) depends on "
+            "winter rainfall and cutting intensity — seek FACTS advice.",
+        ],
+    },
+]
+
+# ── Seedbed-cap brassicas and vegetables — RB209 S6 ──────────────────────────
+# Most vegetable crops: apply no more than 100 kg N/ha in the seedbed.
+# Remainder applied as a top dressing after crop establishment.
+
+_VEG_SEEDBED_CAP_RULES = [
+    {
+        "max_n": 100,
+        "splits": [
+            {"fraction": 1.0, "timing": "At sowing or transplanting (seedbed)"},
+        ],
+        "notes": [],
+    },
+    {
+        "min_n": 101,
+        "splits": [
+            {
+                "fixed_amount": 100,
+                "timing": "At sowing or transplanting (seedbed — maximum 100 kg N/ha)",
+            },
+            {"fraction": 1.0, "timing": "After crop establishment (top dressing)"},
+        ],
+        "notes": [
+            "Apply no more than 100 kg N/ha in the seedbed; "
+            "remainder applied as a top dressing after crop establishment (RB209 S6).",
+        ],
+    },
+]
+
+for _crop in [
+    "veg-brussels-sprouts",
+    "veg-cabbage-storage",
+    "veg-cabbage-head-pre-dec",
+    "veg-cabbage-head-post-dec",
+    "veg-collards-pre-dec",
+    "veg-collards-post-dec",
+    "veg-cauliflower-summer",
+    "veg-calabrese",
+    "veg-beans-dwarf",
+    "veg-radish",
+    "veg-sweetcorn",
+    "veg-beetroot",
+    "veg-swedes",
+    "veg-turnips-parsnips",
+    "veg-carrots",
+    "veg-coriander",
+    "veg-courgettes-seedbed",
+    "veg-courgettes-topdress",
+]:
+    NITROGEN_TIMING_RULES[_crop] = _VEG_SEEDBED_CAP_RULES
+
+# ── Cauliflower (winter) — separate seedbed / top-dressing slugs ──────────────
+# Each slug represents a distinct application; a single dressing per slug.
+
+NITROGEN_TIMING_RULES["veg-cauliflower-winter-seedbed"] = [
+    {
+        "splits": [
+            {"fraction": 1.0, "timing": "At sowing or transplanting (seedbed)"},
+        ],
+        "notes": [
+            "Apply seedbed N at sowing/transplanting. "
+            "A separate top-dressing application will be needed — "
+            "use veg-cauliflower-winter-topdress.",
+        ],
+    },
+]
+
+NITROGEN_TIMING_RULES["veg-cauliflower-winter-topdress"] = [
+    {
+        "splits": [
+            {
+                "fraction": 1.0,
+                "timing": "After establishment, before surface soil dries out (top dressing)",
+            },
+        ],
+        "notes": [],
+    },
+]
+
+# ── Self-blanching celery (seedbed N) — RB209 S6 ─────────────────────────────
+# Seedbed N applied at transplanting. Top-dressing (75–150 kg N/ha) is a
+# separate application 4–6 weeks after planting.
+
+NITROGEN_TIMING_RULES["veg-celery-seedbed"] = [
+    {
+        "splits": [
+            {"fraction": 1.0, "timing": "At transplanting (seedbed)"},
+        ],
+        "notes": [
+            "A top-dressing of 75–150 kg N/ha is also required "
+            "4–6 weeks after transplanting (RB209 S6).",
+        ],
+    },
+]
+
+# ── Bulbs and bulb flowers — RB209 S6 ────────────────────────────────────────
+# Apply as a single top dressing just before crop emergence.
+
+NITROGEN_TIMING_RULES["veg-bulbs"] = [
+    {
+        "splits": [
+            {"fraction": 1.0, "timing": "As a top dressing just before crop emergence"},
+        ],
+        "notes": [],
+    },
+]
+
+# ── Onions — RB209 S6 ─────────────────────────────────────────────────────────
+# Bulb onions and salad onions: apply in spring before or at sowing/planting.
+
+NITROGEN_TIMING_RULES["veg-onions-bulb"] = [
+    {
+        "max_n": 100,
+        "splits": [
+            {"fraction": 1.0, "timing": "Before or at sowing/planting (spring)"},
+        ],
+        "notes": [],
+    },
+    {
+        "min_n": 101,
+        "splits": [
+            {
+                "fixed_amount": 100,
+                "timing": "Before or at sowing/planting (seedbed — maximum 100 kg N/ha)",
+            },
+            {"fraction": 1.0, "timing": "After establishment (top dressing)"},
+        ],
+        "notes": [
+            "Apply no more than 100 kg N/ha at sowing; "
+            "remainder after establishment (RB209 S6).",
+        ],
+    },
+]
+
+NITROGEN_TIMING_RULES["veg-onions-salad"] = [
+    {
+        "splits": [
+            {"fraction": 1.0, "timing": "Before or at sowing (spring)"},
+        ],
+        "notes": [],
+    },
+]
+
+# ── Leeks — RB209 S6 ─────────────────────────────────────────────────────────
+# Apply at transplanting, respecting NVZ closed period.
+
+NITROGEN_TIMING_RULES["veg-leeks"] = [
+    {
+        "max_n": 100,
+        "splits": [
+            {"fraction": 1.0, "timing": "At transplanting"},
+        ],
+        "notes": [],
+    },
+    {
+        "min_n": 101,
+        "splits": [
+            {
+                "fixed_amount": 100,
+                "timing": "At transplanting (seedbed — maximum 100 kg N/ha)",
+            },
+            {"fraction": 1.0, "timing": "After establishment (top dressing)"},
+        ],
+        "notes": [
+            "Apply no more than 100 kg N/ha at transplanting; "
+            "remainder after establishment. "
+            "Observe NVZ closed period for autumn/winter N applications (RB209 S6).",
+        ],
+    },
+]
+
+# ── Lettuce and rocket — RB209 S6 ────────────────────────────────────────────
+# Single dressing at or just before transplanting/sowing.
+
+for _crop in ["veg-lettuce-whole", "veg-lettuce-baby", "veg-rocket"]:
+    NITROGEN_TIMING_RULES[_crop] = [
+        {
+            "splits": [
+                {
+                    "fraction": 1.0,
+                    "timing": "At transplanting or just before sowing",
+                },
+            ],
+            "notes": [
+                "Avoid excess N to minimise nitrate accumulation "
+                "in leafy tissue (RB209 S6).",
+            ],
+        },
+    ]
+
+# ── Mint — RB209 S6 ──────────────────────────────────────────────────────────
+# Apply in spring as growth begins.
+
+for _crop in ["veg-mint-est", "veg-mint"]:
+    NITROGEN_TIMING_RULES[_crop] = [
+        {
+            "splits": [
+                {"fraction": 1.0, "timing": "In spring as growth begins"},
+            ],
+            "notes": [],
+        },
+    ]
+
+# ── Peas and beans (N-fixing) — RB209 S6 ─────────────────────────────────────
+# N recommendation is 0 at all SNS indices; no split dressings needed.
+
+for _crop in ["veg-peas-market", "veg-beans-broad"]:
+    NITROGEN_TIMING_RULES[_crop] = [
+        {
+            "splits": [
+                {
+                    "fraction": 1.0,
+                    "timing": "Not applicable — N-fixing crop, no fertiliser N required",
+                },
+            ],
+            "notes": [],
+        },
+    ]

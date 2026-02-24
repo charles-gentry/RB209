@@ -157,4 +157,9 @@ PHOSPHORUS_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
     ("veg-courgettes-seedbed", 0): 175, ("veg-courgettes-seedbed", 1): 125,
     ("veg-courgettes-seedbed", 2): 75,  ("veg-courgettes-seedbed", 3): 25,
     ("veg-courgettes-seedbed", 4): 0,
+
+    # Courgettes top dressing — P2O5 applied at seedbed; none at topdress
+    ("veg-courgettes-topdress", 0): 0, ("veg-courgettes-topdress", 1): 0,
+    ("veg-courgettes-topdress", 2): 0, ("veg-courgettes-topdress", 3): 0,
+    ("veg-courgettes-topdress", 4): 0,
 }

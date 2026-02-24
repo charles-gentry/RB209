@@ -2,7 +2,7 @@
 
 RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, lime, organic materials, and nitrogen application timing.
 
-The tool supports 55 crop types across arable, grassland, potato, and vegetable categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
+The tool supports 56 crop types across arable, grassland, potato, and vegetable categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
 
 - **Entry points:** `rb209` (if installed) or `python -m rb209`
 - **Python:** 3.10+
@@ -1045,6 +1045,19 @@ $ rb209 timing --crop winter-wheat-feed --total-n 150 --format json
 | `grass-grazed` | ≤100: 2 rotations; 101–200: 3 rotations; ≥201: 5 rotations | RB209 S3 |
 | `grass-grazed-one-cut` | ≤120: 2 dressings (spring + after cut); >120: 3 dressings | RB209 S3 |
 | `grass-hay` | Single application (early February to mid-March) | RB209 S3 |
+| `veg-asparagus-est` | Three equal dressings: pre-sowing, mid-June/July (established), end-August | RB209 S6 |
+| `veg-asparagus` | Single dressing by end-February – early March (year-2 benchmark) | RB209 S6 |
+| Most brassicas, roots, sweetcorn, beans-dwarf, radish, coriander, courgettes | ≤100: single in seedbed; >100: 100 kg seedbed + remainder after establishment | RB209 S6 |
+| `veg-cauliflower-winter-seedbed` | Single seedbed application; note directs to separate topdress slug | RB209 S6 |
+| `veg-cauliflower-winter-topdress` | Single top dressing after establishment | RB209 S6 |
+| `veg-celery-seedbed` | Single at transplanting; note reminds of required 75–150 kg N/ha topdress | RB209 S6 |
+| `veg-bulbs` | Single top dressing just before crop emergence | RB209 S6 |
+| `veg-onions-bulb` | ≤100: single at sowing; >100: 100 kg seedbed + remainder after establishment | RB209 S6 |
+| `veg-onions-salad` | Single application before or at sowing | RB209 S6 |
+| `veg-leeks` | ≤100: single at transplanting; >100: seedbed cap + topdress with NVZ note | RB209 S6 |
+| `veg-lettuce-whole`, `veg-lettuce-baby`, `veg-rocket` | Single at transplanting with nitrate accumulation note | RB209 S6 |
+| `veg-mint-est`, `veg-mint` | Single application in spring as growth begins | RB209 S6 |
+| `veg-peas-market`, `veg-beans-broad` | Not applicable — N-fixing crops | RB209 S6 |
 
 ---
 
@@ -1108,7 +1121,7 @@ Available Crops
     veg-asparagus                  Asparagus (subsequent years)
     veg-asparagus-est              Asparagus (establishment year)
     veg-beans-broad                Broad Beans
-    ... (33 vegetable crops total — use --category vegetables to list all)
+    ... (34 vegetable crops total — use --category vegetables to list all)
 ```
 
 **Example (table, filtered to vegetables):**
@@ -1140,6 +1153,7 @@ Available Crops
     veg-collards-pre-dec           Collards (pre-31 Dec)
     veg-coriander                  Coriander
     veg-courgettes-seedbed         Courgettes (seedbed N)
+    veg-courgettes-topdress        Courgettes (top dressing N)
     veg-leeks                      Leeks
     veg-lettuce-baby               Lettuce (baby leaf)
     veg-lettuce-whole              Lettuce (whole head)
@@ -1232,7 +1246,7 @@ Available Organic Materials
 
 ### Crops
 
-55 crops in 4 categories. Use the **Value** column as the `--crop` argument.
+56 crops in 4 categories. Use the **Value** column as the `--crop` argument.
 
 **Arable (15):**
 
@@ -1271,12 +1285,12 @@ Available Organic Materials
 | `potatoes-maincrop` | Potatoes (maincrop) |
 | `potatoes-seed` | Potatoes (seed) |
 
-**Vegetables (33) — RB209 Section 6:**
+**Vegetables (34) — RB209 Section 6:**
 
 | Value | Display Name | Notes |
 |-------|-------------|-------|
-| `veg-asparagus-est` | Asparagus (establishment year) | Year 1 only |
-| `veg-asparagus` | Asparagus (subsequent years) | Year 2 benchmark; see TODO.md for year 3+ |
+| `veg-asparagus-est` | Asparagus (establishment year) | Year 1 only; `timing` gives 3-way split |
+| `veg-asparagus` | Asparagus (subsequent years) | Year 2 benchmark (120 kg N/ha); see TODO.md for year 3+ |
 | `veg-brussels-sprouts` | Brussels Sprouts | |
 | `veg-cabbage-storage` | Storage Cabbage | |
 | `veg-cabbage-head-pre-dec` | Head Cabbage (pre-31 Dec) | |
@@ -1287,7 +1301,7 @@ Available Organic Materials
 | `veg-cauliflower-winter-seedbed` | Cauliflower (winter — seedbed N) | |
 | `veg-cauliflower-winter-topdress` | Cauliflower (winter — top dressing N) | |
 | `veg-calabrese` | Calabrese | |
-| `veg-celery-seedbed` | Self-blanching Celery (seedbed N) | |
+| `veg-celery-seedbed` | Self-blanching Celery (seedbed N) | `timing` adds top-dressing reminder |
 | `veg-peas-market` | Peas (market pick) | N = 0 at all indices (N-fixing) |
 | `veg-beans-broad` | Broad Beans | N = 0 at all indices (N-fixing) |
 | `veg-beans-dwarf` | Dwarf/Runner Beans (seedbed N) | N = 0 at all indices (N-fixing) |
@@ -1307,7 +1321,8 @@ Available Organic Materials
 | `veg-coriander` | Coriander | |
 | `veg-mint-est` | Mint (establishment year) | |
 | `veg-mint` | Mint (subsequent years) | |
-| `veg-courgettes-seedbed` | Courgettes (seedbed N) | |
+| `veg-courgettes-seedbed` | Courgettes (seedbed N) | Use with `veg-courgettes-topdress` |
+| `veg-courgettes-topdress` | Courgettes (top dressing N) | N only (75 kg/ha at SNS 0–3); P2O5, K2O applied at seedbed |
 
 ### Soil Types
 

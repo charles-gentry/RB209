@@ -542,5 +542,199 @@ class TestErrorHandlingVeg(unittest.TestCase):
             recommend_potassium("veg-carrots", 10)
 
 
+class TestCourgettesTopdress(unittest.TestCase):
+    """Tests for the veg-courgettes-topdress crop slug."""
+
+    def test_n_sns0(self):
+        self.assertEqual(recommend_nitrogen("veg-courgettes-topdress", 0), 75)
+
+    def test_n_sns3(self):
+        self.assertEqual(recommend_nitrogen("veg-courgettes-topdress", 3), 75)
+
+    def test_n_sns4_zero(self):
+        self.assertEqual(recommend_nitrogen("veg-courgettes-topdress", 4), 0)
+
+    def test_n_sns6_zero(self):
+        self.assertEqual(recommend_nitrogen("veg-courgettes-topdress", 6), 0)
+
+    def test_p_all_zero(self):
+        for idx in range(5):
+            self.assertEqual(recommend_phosphorus("veg-courgettes-topdress", idx), 0)
+
+    def test_k_all_zero(self):
+        for idx in range(5):
+            self.assertEqual(recommend_potassium("veg-courgettes-topdress", idx), 0)
+
+    def test_sulfur_zero(self):
+        self.assertEqual(recommend_sulfur("veg-courgettes-topdress"), 0)
+
+    def test_recommend_all_n_only(self):
+        rec = recommend_all("veg-courgettes-topdress", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 75)
+        self.assertEqual(rec.phosphorus, 0)
+        self.assertEqual(rec.potassium, 0)
+
+
+class TestVegNitrogenTiming(unittest.TestCase):
+    """Nitrogen timing rules for vegetable crops."""
+
+    def setUp(self):
+        from rb209.engine import nitrogen_timing as _nt
+        self._nt = _nt
+
+    # ── Asparagus establishment ──────────────────────────────────────────────
+
+    def test_asparagus_est_three_splits(self):
+        r = self._nt("veg-asparagus-est", 150)
+        self.assertEqual(len(r.splits), 3)
+
+    def test_asparagus_est_equal_thirds(self):
+        r = self._nt("veg-asparagus-est", 150)
+        self.assertEqual(r.splits[0].amount, 50)
+        self.assertEqual(r.splits[1].amount, 50)
+        self.assertEqual(r.splits[2].amount, 50)
+
+    def test_asparagus_est_amounts_sum_to_total(self):
+        for total in [90, 120, 150]:
+            r = self._nt("veg-asparagus-est", total)
+            self.assertEqual(sum(s.amount for s in r.splits), total)
+
+    def test_asparagus_est_timing_labels(self):
+        r = self._nt("veg-asparagus-est", 90)
+        self.assertIn("Before sowing", r.splits[0].timing)
+        self.assertIn("established", r.splits[1].timing)
+        self.assertIn("August", r.splits[2].timing)
+
+    # ── Asparagus subsequent years ───────────────────────────────────────────
+
+    def test_asparagus_single_dressing(self):
+        r = self._nt("veg-asparagus", 120)
+        self.assertEqual(len(r.splits), 1)
+        self.assertEqual(r.splits[0].amount, 120)
+        self.assertIn("February", r.splits[0].timing)
+
+    def test_asparagus_year3_note(self):
+        r = self._nt("veg-asparagus", 120)
+        self.assertTrue(any("year 3" in n.lower() or "Year 3" in n for n in r.notes))
+
+    # ── Seedbed-cap brassicas ────────────────────────────────────────────────
+
+    def test_brussels_low_n_single_dressing(self):
+        r = self._nt("veg-brussels-sprouts", 80)
+        self.assertEqual(len(r.splits), 1)
+        self.assertEqual(r.splits[0].amount, 80)
+
+    def test_brussels_100_single_dressing(self):
+        r = self._nt("veg-brussels-sprouts", 100)
+        self.assertEqual(len(r.splits), 1)
+
+    def test_brussels_high_n_two_splits(self):
+        r = self._nt("veg-brussels-sprouts", 270)
+        self.assertEqual(len(r.splits), 2)
+
+    def test_brussels_high_n_seedbed_capped_at_100(self):
+        r = self._nt("veg-brussels-sprouts", 270)
+        self.assertEqual(r.splits[0].amount, 100)
+
+    def test_brussels_high_n_topdress_is_remainder(self):
+        r = self._nt("veg-brussels-sprouts", 270)
+        self.assertEqual(r.splits[1].amount, 170)
+
+    def test_brussels_amounts_sum_to_total(self):
+        for total in [80, 100, 200, 330]:
+            r = self._nt("veg-brussels-sprouts", total)
+            self.assertEqual(sum(s.amount for s in r.splits), total)
+
+    def test_fixed_amount_total_less_than_cap(self):
+        # When total N < 100, the seedbed cap should not produce a negative topdress.
+        r = self._nt("veg-sweetcorn", 75)
+        self.assertEqual(len(r.splits), 1)
+        self.assertEqual(r.splits[0].amount, 75)
+
+    def test_seedbed_cap_exact_100(self):
+        r = self._nt("veg-carrots", 100)
+        self.assertEqual(len(r.splits), 1)
+        self.assertEqual(r.splits[0].amount, 100)
+
+    def test_seedbed_cap_101(self):
+        # 101 kg/ha should produce 100 seedbed + 1 topdress.
+        r = self._nt("veg-beetroot", 101)
+        self.assertEqual(len(r.splits), 2)
+        self.assertEqual(r.splits[0].amount, 100)
+        self.assertEqual(r.splits[1].amount, 1)
+
+    # ── Cauliflower winter split slugs ───────────────────────────────────────
+
+    def test_cauliflower_winter_seedbed_single(self):
+        r = self._nt("veg-cauliflower-winter-seedbed", 100)
+        self.assertEqual(len(r.splits), 1)
+        self.assertIn("seedbed", r.splits[0].timing.lower())
+
+    def test_cauliflower_winter_topdress_single(self):
+        r = self._nt("veg-cauliflower-winter-topdress", 190)
+        self.assertEqual(len(r.splits), 1)
+        self.assertIn("top dressing", r.splits[0].timing.lower())
+
+    # ── Celery ───────────────────────────────────────────────────────────────
+
+    def test_celery_seedbed_has_topdress_note(self):
+        r = self._nt("veg-celery-seedbed", 75)
+        self.assertTrue(any("top" in n.lower() for n in r.notes))
+
+    # ── Bulbs ────────────────────────────────────────────────────────────────
+
+    def test_bulbs_single_before_emergence(self):
+        r = self._nt("veg-bulbs", 125)
+        self.assertEqual(len(r.splits), 1)
+        self.assertIn("emergence", r.splits[0].timing.lower())
+
+    # ── Onions ───────────────────────────────────────────────────────────────
+
+    def test_onions_bulb_low_n_single(self):
+        r = self._nt("veg-onions-bulb", 90)
+        self.assertEqual(len(r.splits), 1)
+
+    def test_onions_bulb_high_n_two_splits(self):
+        r = self._nt("veg-onions-bulb", 160)
+        self.assertEqual(len(r.splits), 2)
+        self.assertEqual(r.splits[0].amount, 100)
+
+    def test_onions_salad_single(self):
+        r = self._nt("veg-onions-salad", 130)
+        self.assertEqual(len(r.splits), 1)
+
+    # ── Leeks ────────────────────────────────────────────────────────────────
+
+    def test_leeks_high_n_nvz_note(self):
+        r = self._nt("veg-leeks", 200)
+        self.assertTrue(any("NVZ" in n for n in r.notes))
+
+    def test_leeks_low_n_single(self):
+        r = self._nt("veg-leeks", 80)
+        self.assertEqual(len(r.splits), 1)
+
+    # ── Lettuce/rocket ───────────────────────────────────────────────────────
+
+    def test_lettuce_single_with_nitrate_note(self):
+        r = self._nt("veg-lettuce-whole", 200)
+        self.assertEqual(len(r.splits), 1)
+        self.assertTrue(any("nitrate" in n.lower() for n in r.notes))
+
+    def test_rocket_single_with_nitrate_note(self):
+        r = self._nt("veg-rocket", 100)
+        self.assertEqual(len(r.splits), 1)
+        self.assertTrue(any("nitrate" in n.lower() for n in r.notes))
+
+    # ── N-fixing crops ───────────────────────────────────────────────────────
+
+    def test_peas_timing_not_applicable(self):
+        r = self._nt("veg-peas-market", 0)
+        self.assertIn("not applicable", r.splits[0].timing.lower())
+
+    def test_beans_broad_timing_not_applicable(self):
+        r = self._nt("veg-beans-broad", 0)
+        self.assertIn("not applicable", r.splits[0].timing.lower())
+
+
 if __name__ == "__main__":
     unittest.main()
