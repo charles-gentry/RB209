@@ -233,6 +233,200 @@ NVZ_NMAX: dict[str, float] = {
     "potatoes-seed": 270,
 }
 
+NITROGEN_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
+    # Table 6.11 — Asparagus (establishment year)
+    ("veg-asparagus-est", 0): 150, ("veg-asparagus-est", 1): 150,
+    ("veg-asparagus-est", 2): 150, ("veg-asparagus-est", 3): 90,
+    ("veg-asparagus-est", 4): 20,  ("veg-asparagus-est", 5): 0,
+    ("veg-asparagus-est", 6): 0,
+
+    # Table 6.11 — Asparagus (subsequent years, year 2 benchmark)
+    ("veg-asparagus", 0): 120, ("veg-asparagus", 1): 120,
+    ("veg-asparagus", 2): 120, ("veg-asparagus", 3): 120,
+    ("veg-asparagus", 4): 120, ("veg-asparagus", 5): 120,
+    ("veg-asparagus", 6): 120,
+
+    # Table 6.12 — Brussels Sprouts
+    ("veg-brussels-sprouts", 0): 330, ("veg-brussels-sprouts", 1): 300,
+    ("veg-brussels-sprouts", 2): 270, ("veg-brussels-sprouts", 3): 230,
+    ("veg-brussels-sprouts", 4): 180, ("veg-brussels-sprouts", 5): 80,
+    ("veg-brussels-sprouts", 6): 0,
+
+    # Table 6.12 — Storage Cabbage
+    ("veg-cabbage-storage", 0): 340, ("veg-cabbage-storage", 1): 310,
+    ("veg-cabbage-storage", 2): 280, ("veg-cabbage-storage", 3): 240,
+    ("veg-cabbage-storage", 4): 190, ("veg-cabbage-storage", 5): 90,
+    ("veg-cabbage-storage", 6): 0,
+
+    # Table 6.12 — Head Cabbage (harvest pre-31 December)
+    ("veg-cabbage-head-pre-dec", 0): 325, ("veg-cabbage-head-pre-dec", 1): 290,
+    ("veg-cabbage-head-pre-dec", 2): 260, ("veg-cabbage-head-pre-dec", 3): 220,
+    ("veg-cabbage-head-pre-dec", 4): 170, ("veg-cabbage-head-pre-dec", 5): 70,
+    ("veg-cabbage-head-pre-dec", 6): 0,
+
+    # Table 6.12 — Head Cabbage (harvest post-31 December)
+    ("veg-cabbage-head-post-dec", 0): 240, ("veg-cabbage-head-post-dec", 1): 210,
+    ("veg-cabbage-head-post-dec", 2): 180, ("veg-cabbage-head-post-dec", 3): 140,
+    ("veg-cabbage-head-post-dec", 4): 90,  ("veg-cabbage-head-post-dec", 5): 0,
+    ("veg-cabbage-head-post-dec", 6): 0,
+
+    # Table 6.12 — Collards (harvest pre-31 December)
+    ("veg-collards-pre-dec", 0): 210, ("veg-collards-pre-dec", 1): 190,
+    ("veg-collards-pre-dec", 2): 180, ("veg-collards-pre-dec", 3): 160,
+    ("veg-collards-pre-dec", 4): 140, ("veg-collards-pre-dec", 5): 90,
+    ("veg-collards-pre-dec", 6): 0,
+
+    # Table 6.12 — Collards (harvest post-31 December)
+    ("veg-collards-post-dec", 0): 310, ("veg-collards-post-dec", 1): 290,
+    ("veg-collards-post-dec", 2): 270, ("veg-collards-post-dec", 3): 240,
+    ("veg-collards-post-dec", 4): 210, ("veg-collards-post-dec", 5): 140,
+    ("veg-collards-post-dec", 6): 90,
+
+    # Table 6.14 — Cauliflower (summer/autumn)
+    ("veg-cauliflower-summer", 0): 290, ("veg-cauliflower-summer", 1): 260,
+    ("veg-cauliflower-summer", 2): 235, ("veg-cauliflower-summer", 3): 210,
+    ("veg-cauliflower-summer", 4): 170, ("veg-cauliflower-summer", 5): 80,
+    ("veg-cauliflower-summer", 6): 0,
+
+    # Table 6.14 — Cauliflower (winter hardy / Roscoff) — seedbed dressing
+    ("veg-cauliflower-winter-seedbed", 0): 100, ("veg-cauliflower-winter-seedbed", 1): 100,
+    ("veg-cauliflower-winter-seedbed", 2): 100, ("veg-cauliflower-winter-seedbed", 3): 100,
+    ("veg-cauliflower-winter-seedbed", 4): 60,  ("veg-cauliflower-winter-seedbed", 5): 0,
+    ("veg-cauliflower-winter-seedbed", 6): 0,
+
+    # Table 6.14 — Cauliflower (winter hardy / Roscoff) — top dressing
+    ("veg-cauliflower-winter-topdress", 0): 190, ("veg-cauliflower-winter-topdress", 1): 160,
+    ("veg-cauliflower-winter-topdress", 2): 135, ("veg-cauliflower-winter-topdress", 3): 110,
+    ("veg-cauliflower-winter-topdress", 4): 100, ("veg-cauliflower-winter-topdress", 5): 80,
+    ("veg-cauliflower-winter-topdress", 6): 0,
+
+    # Table 6.14 — Calabrese
+    ("veg-calabrese", 0): 235, ("veg-calabrese", 1): 200,
+    ("veg-calabrese", 2): 165, ("veg-calabrese", 3): 135,
+    ("veg-calabrese", 4): 80,  ("veg-calabrese", 5): 0,
+    ("veg-calabrese", 6): 0,
+
+    # Table 6.16 — Self-blanching Celery (seedbed N)
+    ("veg-celery-seedbed", 0): 75, ("veg-celery-seedbed", 1): 75,
+    ("veg-celery-seedbed", 2): 75, ("veg-celery-seedbed", 3): 75,
+    ("veg-celery-seedbed", 4): 0,  ("veg-celery-seedbed", 5): 0,
+    ("veg-celery-seedbed", 6): 0,
+
+    # Table 6.17a — Peas (market pick) — N-fixing, no fertiliser N
+    **{("veg-peas-market", i): 0 for i in range(7)},
+
+    # Table 6.17b — Broad Beans — N-fixing, no fertiliser N
+    **{("veg-beans-broad", i): 0 for i in range(7)},
+
+    # Table 6.17b — Dwarf/Runner Beans (seedbed dressing)
+    ("veg-beans-dwarf", 0): 180, ("veg-beans-dwarf", 1): 150,
+    ("veg-beans-dwarf", 2): 120, ("veg-beans-dwarf", 3): 80,
+    ("veg-beans-dwarf", 4): 30,  ("veg-beans-dwarf", 5): 0,
+    ("veg-beans-dwarf", 6): 0,
+
+    # Table 6.18 — Radish
+    ("veg-radish", 0): 100, ("veg-radish", 1): 90,
+    ("veg-radish", 2): 80,  ("veg-radish", 3): 65,
+    ("veg-radish", 4): 50,  ("veg-radish", 5): 20,
+    ("veg-radish", 6): 0,
+
+    # Table 6.18 — Sweetcorn
+    ("veg-sweetcorn", 0): 220, ("veg-sweetcorn", 1): 175,
+    ("veg-sweetcorn", 2): 125, ("veg-sweetcorn", 3): 75,
+    ("veg-sweetcorn", 4): 0,   ("veg-sweetcorn", 5): 0,
+    ("veg-sweetcorn", 6): 0,
+
+    # Table 6.19 — Lettuce (whole head — Crisp/Escarole)
+    ("veg-lettuce-whole", 0): 200, ("veg-lettuce-whole", 1): 180,
+    ("veg-lettuce-whole", 2): 160, ("veg-lettuce-whole", 3): 150,
+    ("veg-lettuce-whole", 4): 125, ("veg-lettuce-whole", 5): 75,
+    ("veg-lettuce-whole", 6): 30,
+
+    # Table 6.19 — Lettuce (baby leaf)
+    ("veg-lettuce-baby", 0): 60, ("veg-lettuce-baby", 1): 50,
+    ("veg-lettuce-baby", 2): 40, ("veg-lettuce-baby", 3): 30,
+    ("veg-lettuce-baby", 4): 10, ("veg-lettuce-baby", 5): 0,
+    ("veg-lettuce-baby", 6): 0,
+
+    # Table 6.19 — Wild Rocket
+    ("veg-rocket", 0): 125, ("veg-rocket", 1): 115,
+    ("veg-rocket", 2): 100, ("veg-rocket", 3): 90,
+    ("veg-rocket", 4): 75,  ("veg-rocket", 5): 40,
+    ("veg-rocket", 6): 0,
+
+    # Table 6.20 — Bulb Onions
+    ("veg-onions-bulb", 0): 160, ("veg-onions-bulb", 1): 130,
+    ("veg-onions-bulb", 2): 110, ("veg-onions-bulb", 3): 90,
+    ("veg-onions-bulb", 4): 60,  ("veg-onions-bulb", 5): 0,
+    ("veg-onions-bulb", 6): 0,
+
+    # Table 6.20 — Salad Onions
+    ("veg-onions-salad", 0): 130, ("veg-onions-salad", 1): 120,
+    ("veg-onions-salad", 2): 110, ("veg-onions-salad", 3): 100,
+    ("veg-onions-salad", 4): 80,  ("veg-onions-salad", 5): 50,
+    ("veg-onions-salad", 6): 20,
+
+    # Table 6.20 — Leeks
+    ("veg-leeks", 0): 200, ("veg-leeks", 1): 190,
+    ("veg-leeks", 2): 170, ("veg-leeks", 3): 160,
+    ("veg-leeks", 4): 130, ("veg-leeks", 5): 80,
+    ("veg-leeks", 6): 40,
+
+    # Table 6.22 — Beetroot
+    ("veg-beetroot", 0): 290, ("veg-beetroot", 1): 260,
+    ("veg-beetroot", 2): 240, ("veg-beetroot", 3): 220,
+    ("veg-beetroot", 4): 190, ("veg-beetroot", 5): 120,
+    ("veg-beetroot", 6): 60,
+
+    # Table 6.22 — Swedes
+    ("veg-swedes", 0): 135, ("veg-swedes", 1): 100,
+    ("veg-swedes", 2): 70,  ("veg-swedes", 3): 30,
+    ("veg-swedes", 4): 0,   ("veg-swedes", 5): 0,
+    ("veg-swedes", 6): 0,
+
+    # Table 6.22 — Turnips and Parsnips
+    ("veg-turnips-parsnips", 0): 170, ("veg-turnips-parsnips", 1): 130,
+    ("veg-turnips-parsnips", 2): 100, ("veg-turnips-parsnips", 3): 70,
+    ("veg-turnips-parsnips", 4): 20,  ("veg-turnips-parsnips", 5): 0,
+    ("veg-turnips-parsnips", 6): 0,
+
+    # Table 6.22 — Carrots
+    ("veg-carrots", 0): 100, ("veg-carrots", 1): 70,
+    ("veg-carrots", 2): 40,  ("veg-carrots", 3): 0,
+    ("veg-carrots", 4): 0,   ("veg-carrots", 5): 0,
+    ("veg-carrots", 6): 0,
+
+    # Table 6.24 — Bulbs and Bulb Flowers
+    ("veg-bulbs", 0): 125, ("veg-bulbs", 1): 100,
+    ("veg-bulbs", 2): 50,  ("veg-bulbs", 3): 0,
+    ("veg-bulbs", 4): 0,   ("veg-bulbs", 5): 0,
+    ("veg-bulbs", 6): 0,
+
+    # Table 6.25 — Coriander
+    ("veg-coriander", 0): 140, ("veg-coriander", 1): 125,
+    ("veg-coriander", 2): 115, ("veg-coriander", 3): 105,
+    ("veg-coriander", 4): 90,  ("veg-coriander", 5): 55,
+    ("veg-coriander", 6): 30,
+
+    # Table 6.25 — Mint (establishment year)
+    ("veg-mint-est", 0): 180, ("veg-mint-est", 1): 170,
+    ("veg-mint-est", 2): 160, ("veg-mint-est", 3): 150,
+    ("veg-mint-est", 4): 130, ("veg-mint-est", 5): 100,
+    ("veg-mint-est", 6): 70,
+
+    # Table 6.25 — Mint (subsequent years)
+    ("veg-mint", 0): 180, ("veg-mint", 1): 170,
+    ("veg-mint", 2): 160, ("veg-mint", 3): 150,
+    ("veg-mint", 4): 130, ("veg-mint", 5): 100,
+    ("veg-mint", 6): 70,
+
+    # Table 6.26 — Courgettes (seedbed dressing)
+    ("veg-courgettes-seedbed", 0): 100, ("veg-courgettes-seedbed", 1): 100,
+    ("veg-courgettes-seedbed", 2): 100, ("veg-courgettes-seedbed", 3): 40,
+    ("veg-courgettes-seedbed", 4): 0,   ("veg-courgettes-seedbed", 5): 0,
+    ("veg-courgettes-seedbed", 6): 0,
+}
+
 NITROGEN_SOIL_SPECIFIC: dict[tuple[str, int, str], float] = {
     # Table 4.17: Winter wheat (feed) — light sand soils
     ("winter-wheat-feed", 0, "light"): 180,

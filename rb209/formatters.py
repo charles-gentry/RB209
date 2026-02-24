@@ -163,7 +163,7 @@ def format_crop_list(
         cat = c["category"]
         categories.setdefault(cat, []).append(c)
 
-    for cat in ["arable", "grassland", "potatoes"]:
+    for cat in ["arable", "grassland", "potatoes", "vegetables"]:
         if cat not in categories:
             continue
         lines.append(f"\n  {cat.upper()}")

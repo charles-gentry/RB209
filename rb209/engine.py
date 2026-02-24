@@ -13,23 +13,38 @@ from rb209.models import (
     Rainfall,
     SNSResult,
     SoilType,
+    VegPreviousCrop,
+    VegSoilType,
 )
 from rb209.data.crops import CROP_INFO
 from rb209.data.lime import LIME_FACTORS, MAX_SINGLE_APPLICATION, MIN_PH_FOR_LIMING, TARGET_PH
-from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS
-from rb209.data.nitrogen import NITROGEN_RECOMMENDATIONS, NITROGEN_SOIL_SPECIFIC, NVZ_NMAX
+from rb209.data.magnesium import MAGNESIUM_RECOMMENDATIONS, VEG_MAGNESIUM_RECOMMENDATIONS
+from rb209.data.nitrogen import (
+    NITROGEN_RECOMMENDATIONS,
+    NITROGEN_SOIL_SPECIFIC,
+    NITROGEN_VEG_RECOMMENDATIONS,
+    NVZ_NMAX,
+)
 from rb209.data.organic import (
     ORGANIC_MATERIAL_INFO,
     ORGANIC_N_TIMING_FACTORS,
     TIMING_SOIL_CATEGORY,
 )
-from rb209.data.phosphorus import PHOSPHORUS_RECOMMENDATIONS
+from rb209.data.phosphorus import PHOSPHORUS_RECOMMENDATIONS, PHOSPHORUS_VEG_RECOMMENDATIONS
 from rb209.data.potassium import (
     POTASSIUM_RECOMMENDATIONS,
     POTASSIUM_STRAW_INCORPORATED,
     POTASSIUM_STRAW_REMOVED,
+    POTASSIUM_VEG_RECOMMENDATIONS,
+    POTASSIUM_VEG_K2_UPPER,
 )
-from rb209.data.sns import GRASS_LEY_SNS_LOOKUP, SNS_LOOKUP, SNS_VALUE_TO_INDEX
+from rb209.data.sns import (
+    GRASS_LEY_SNS_LOOKUP,
+    SNS_LOOKUP,
+    SNS_VALUE_TO_INDEX,
+    VEG_SNS_LOOKUP,
+    VEG_SMN_SNS_THRESHOLDS,
+)
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
 from rb209.data.ber import BER_ADJUSTMENTS, CROP_BER_GROUP
@@ -308,6 +323,128 @@ def calculate_grass_ley_sns(
     )
 
 
+def calculate_veg_sns(
+    previous_crop: str,
+    soil_type: str,
+    rainfall: str,
+) -> SNSResult:
+    """Calculate Soil Nitrogen Supply index for vegetable crops (Section 6).
+
+    Uses Tables 6.2–6.4 which have 11 previous-crop categories and four
+    mineral soil columns.  Organic and peat soils return advisory indices
+    with a note to consult a FACTS Qualified Adviser.
+
+    Args:
+        previous_crop: VegPreviousCrop value (e.g. "cereals", "veg-high-n").
+        soil_type: VegSoilType value ("light-sand", "medium", "deep-clay",
+            "deep-silt", "organic", or "peat").
+        rainfall: Rainfall category — "low" (<600 mm / <150 mm EWR),
+            "moderate" (600–700 mm), or "high" (>700 mm / >250 mm EWR).
+
+    Returns:
+        SNSResult with method="veg-field-assessment" and the calculated index.
+    """
+    try:
+        VegPreviousCrop(previous_crop)
+    except ValueError:
+        valid = ", ".join(p.value for p in VegPreviousCrop)
+        raise ValueError(
+            f"Unknown vegetable previous crop '{previous_crop}'. Valid options: {valid}"
+        )
+    try:
+        VegSoilType(soil_type)
+    except ValueError:
+        valid = ", ".join(s.value for s in VegSoilType)
+        raise ValueError(
+            f"Unknown vegetable soil type '{soil_type}'. Valid options: {valid}"
+        )
+    valid_rainfalls = ("low", "moderate", "high")
+    if rainfall not in valid_rainfalls:
+        raise ValueError(
+            f"Unknown rainfall '{rainfall}'. Valid options: {', '.join(valid_rainfalls)}"
+        )
+
+    notes: list[str] = []
+
+    # Advisory-only soil types — return fixed indices with FACTS advice note
+    if soil_type == "organic":
+        notes.append(
+            "Organic soils typically have SNS Index 3–6. "
+            "Consult a FACTS Qualified Adviser for site-specific guidance."
+        )
+        return SNSResult(
+            sns_index=4,
+            previous_crop=previous_crop,
+            soil_type=soil_type,
+            rainfall=rainfall,
+            method="veg-field-assessment",
+            notes=notes,
+        )
+    if soil_type == "peat":
+        notes.append(
+            "Peat soils typically have SNS Index 4–6. "
+            "Consult a FACTS Qualified Adviser for site-specific guidance."
+        )
+        return SNSResult(
+            sns_index=5,
+            previous_crop=previous_crop,
+            soil_type=soil_type,
+            rainfall=rainfall,
+            method="veg-field-assessment",
+            notes=notes,
+        )
+
+    key = (previous_crop, soil_type, rainfall)
+    if key not in VEG_SNS_LOOKUP:
+        raise ValueError(
+            f"No vegetable SNS data for previous_crop='{previous_crop}', "
+            f"soil_type='{soil_type}', rainfall='{rainfall}'."
+        )
+    sns_index = VEG_SNS_LOOKUP[key]
+
+    notes.append(
+        f"Previous crop '{previous_crop}' on {soil_type} soil with {rainfall} rainfall "
+        f"gives SNS Index {sns_index} (Tables 6.2–6.4)."
+    )
+
+    return SNSResult(
+        sns_index=sns_index,
+        previous_crop=previous_crop,
+        soil_type=soil_type,
+        rainfall=rainfall,
+        method="veg-field-assessment",
+        notes=notes,
+    )
+
+
+def smn_to_sns_index_veg(smn: float, depth_cm: int) -> int:
+    """Convert SMN (kg N/ha) to SNS index for vegetable crops using Table 6.6.
+
+    Table 6.6 thresholds differ from the arable Table 4.10 used by
+    ``sns_value_to_index()``.
+
+    Args:
+        smn: Soil mineral nitrogen measured to depth_cm (kg N/ha, must be >= 0).
+        depth_cm: Sampling depth — 30, 60, or 90 cm.
+
+    Returns:
+        SNS index (0–6).
+
+    Raises:
+        ValueError: If depth_cm is not 30, 60, or 90, or if smn is negative.
+    """
+    if smn < 0:
+        raise ValueError(f"SMN must be non-negative, got {smn}")
+    if depth_cm not in VEG_SMN_SNS_THRESHOLDS:
+        raise ValueError(
+            f"depth_cm must be 30, 60, or 90, got {depth_cm}"
+        )
+    for upper_bound, index in VEG_SMN_SNS_THRESHOLDS[depth_cm]:
+        if smn <= upper_bound:
+            return index
+    return 6
+
+
 def combine_sns(*results: SNSResult) -> SNSResult:
     """Return the SNS result with the highest index.
 
@@ -398,16 +535,22 @@ def recommend_nitrogen(
         if soil_key in NITROGEN_SOIL_SPECIFIC:
             base = NITROGEN_SOIL_SPECIFIC[soil_key]
         else:
-            # No soil-specific table for this crop; fall back to generic table.
+            # No soil-specific table for this crop; fall back to generic or veg table.
             key = (crop, sns_index)
-            if key not in NITROGEN_RECOMMENDATIONS:
+            if key in NITROGEN_RECOMMENDATIONS:
+                base = NITROGEN_RECOMMENDATIONS[key]
+            elif key in NITROGEN_VEG_RECOMMENDATIONS:
+                base = NITROGEN_VEG_RECOMMENDATIONS[key]
+            else:
                 raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
-            base = NITROGEN_RECOMMENDATIONS[key]
     else:
         key = (crop, sns_index)
-        if key not in NITROGEN_RECOMMENDATIONS:
+        if key in NITROGEN_RECOMMENDATIONS:
+            base = NITROGEN_RECOMMENDATIONS[key]
+        elif key in NITROGEN_VEG_RECOMMENDATIONS:
+            base = NITROGEN_VEG_RECOMMENDATIONS[key]
+        else:
             raise ValueError(f"No nitrogen data for crop '{crop}' at SNS {sns_index}")
-        base = NITROGEN_RECOMMENDATIONS[key]
 
     if expected_yield is not None:
         if crop not in YIELD_ADJUSTMENTS:
@@ -451,9 +594,12 @@ def recommend_phosphorus(
 
     clamped = _clamp_index(p_index, 4)
     key = (crop, clamped)
-    if key not in PHOSPHORUS_RECOMMENDATIONS:
+    if key in PHOSPHORUS_RECOMMENDATIONS:
+        base = PHOSPHORUS_RECOMMENDATIONS[key]
+    elif key in PHOSPHORUS_VEG_RECOMMENDATIONS:
+        base = PHOSPHORUS_VEG_RECOMMENDATIONS[key]
+    else:
         raise ValueError(f"No phosphorus data for crop '{crop}'")
-    base = PHOSPHORUS_RECOMMENDATIONS[key]
 
     if expected_yield is not None:
         if crop not in YIELD_ADJUSTMENTS:
@@ -477,6 +623,7 @@ def recommend_potassium(
     k_index: int,
     straw_removed: bool = True,
     expected_yield: float | None = None,
+    k_upper_half: bool = False,
 ) -> float:
     """Return potassium recommendation in kg K2O/ha.
 
@@ -487,6 +634,8 @@ def recommend_potassium(
         expected_yield: Optional expected yield in t/ha. When provided and the
             crop has yield adjustment data, adjusts the recommendation based on
             the difference from the baseline yield.
+        k_upper_half: For vegetable crops at K Index 2 — True if soil K is in
+            the upper half (181–240 mg/l, i.e. 2+), False for 2- (121–180 mg/l).
     """
     _validate_crop(crop)
     _validate_index("K index", k_index, 0, 9)
@@ -494,9 +643,11 @@ def recommend_potassium(
     clamped = _clamp_index(k_index, 4)
     key = (crop, clamped)
 
+    # K Index 2 upper-half (2+) override for vegetable crops
+    if clamped == 2 and k_upper_half and crop in POTASSIUM_VEG_K2_UPPER:
+        base = POTASSIUM_VEG_K2_UPPER[crop]
     # Check if this is a cereal with straw option
-    info = CROP_INFO[crop]
-    if info.get("has_straw_option"):
+    elif CROP_INFO[crop].get("has_straw_option"):
         table = POTASSIUM_STRAW_REMOVED if straw_removed else POTASSIUM_STRAW_INCORPORATED
         if key in table:
             base = table[key]
@@ -506,6 +657,8 @@ def recommend_potassium(
             raise ValueError(f"No potassium data for crop '{crop}'")
     elif key in POTASSIUM_RECOMMENDATIONS:
         base = POTASSIUM_RECOMMENDATIONS[key]
+    elif key in POTASSIUM_VEG_RECOMMENDATIONS:
+        base = POTASSIUM_VEG_RECOMMENDATIONS[key]
     else:
         raise ValueError(f"No potassium data for crop '{crop}'")
 
@@ -526,14 +679,19 @@ def recommend_potassium(
 
 # ── Magnesium ───────────────────────────────────────────────────────
 
-def recommend_magnesium(mg_index: int) -> float:
+def recommend_magnesium(mg_index: int, crop: str | None = None) -> float:
     """Return magnesium recommendation in kg MgO/ha.
 
     Args:
         mg_index: Soil Mg index (0-9, clamped to max available key).
+        crop: Optional crop value string. When provided and the crop is a
+            vegetable, uses the higher vegetable Mg rates (150/100 at index 0/1)
+            instead of the arable rates (90/60).
     """
     _validate_index("Mg index", mg_index, 0, 9)
     clamped = _clamp_index(mg_index, 4)
+    if crop and CROP_INFO.get(crop, {}).get("category") == "vegetables":
+        return VEG_MAGNESIUM_RECOMMENDATIONS[clamped]
     return MAGNESIUM_RECOMMENDATIONS[clamped]
 
 
@@ -563,6 +721,7 @@ def recommend_all(
     soil_type: str | None = None,
     expected_yield: float | None = None,
     ber: float | None = None,
+    k_upper_half: bool = False,
 ) -> NutrientRecommendation:
     """Return a full nutrient recommendation for a crop.
 
@@ -577,13 +736,15 @@ def recommend_all(
         expected_yield: Optional expected yield in t/ha for yield-adjusted
             recommendations.
         ber: Optional break-even ratio for cereal N adjustment.
+        k_upper_half: For vegetable crops at K Index 2 — True if soil K is in
+            the upper half (181–240 mg/l, i.e. 2+), False for 2- (121–180 mg/l).
     """
     _validate_crop(crop)
 
     n = recommend_nitrogen(crop, sns_index, soil_type, expected_yield=expected_yield, ber=ber)
     p = recommend_phosphorus(crop, p_index, expected_yield=expected_yield)
-    k = recommend_potassium(crop, k_index, straw_removed, expected_yield=expected_yield)
-    mg = recommend_magnesium(mg_index)
+    k = recommend_potassium(crop, k_index, straw_removed, expected_yield=expected_yield, k_upper_half=k_upper_half)
+    mg = recommend_magnesium(mg_index, crop=crop)
     s = recommend_sulfur(crop)
 
     notes: list[str] = []
@@ -596,8 +757,47 @@ def recommend_all(
     if info.get("notes"):
         notes.append(info["notes"])
 
-    if n == 0 and crop in ("peas", "field-beans"):
+    if n == 0 and crop in ("peas", "field-beans", "veg-peas-market", "veg-beans-broad"):
         notes.append("N-fixing crop: no fertiliser nitrogen required.")
+
+    # Vegetable-specific advisory notes
+    _VEG_SEEDBED_CAP_CROPS = {
+        "veg-beans-dwarf", "veg-radish", "veg-sweetcorn", "veg-beetroot",
+        "veg-swedes", "veg-turnips-parsnips", "veg-carrots", "veg-coriander",
+    }
+    if crop in _VEG_SEEDBED_CAP_CROPS and n > 0:
+        notes.append(
+            "Apply no more than 100 kg N/ha in the seedbed. "
+            "Apply remainder after establishment."
+        )
+
+    if crop == "veg-asparagus":
+        notes.append(
+            "Year 2: apply 120 kg N/ha by end-Feb/early-Mar. "
+            "Year 3+: rate depends on winter rainfall (40–80 kg N/ha); seek FACTS advice."
+        )
+
+    if crop == "veg-celery-seedbed":
+        notes.append(
+            "Apply 75–150 kg N/ha top dressing 4–6 weeks after planting."
+        )
+
+    if crop in ("veg-lettuce-whole", "veg-lettuce-baby", "veg-rocket"):
+        notes.append(
+            "Reduce N for late-season crops to comply with EU/UK tissue-nitrate limits."
+        )
+
+    if crop == "veg-leeks":
+        notes.append(
+            "Do not apply fertiliser N during the NVZ closed period "
+            "without written FACTS Qualified Adviser recommendation."
+        )
+
+    if info["category"] == "vegetables" and k_index == 2:
+        notes.append(
+            "K Index 2 is split into 2- (121–180 mg/l) and 2+ (181–240 mg/l). "
+            "Use --k-upper-half flag if soil K is in the upper half."
+        )
 
     # 1.1 NVZ N-max warning
     if crop in NVZ_NMAX and n > NVZ_NMAX[crop]:

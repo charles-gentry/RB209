@@ -12,12 +12,14 @@ from rb209.engine import (
     calculate_organic,
     calculate_smn_sns,
     calculate_sns,
+    calculate_veg_sns,
     nitrogen_timing,
     recommend_all,
     recommend_nitrogen,
     recommend_phosphorus,
     recommend_potassium,
     recommend_sulfur,
+    smn_to_sns_index_veg,
 )
 from rb209.formatters import (
     format_crop_list,
@@ -29,7 +31,7 @@ from rb209.formatters import (
     format_sns,
     format_timing,
 )
-from rb209.models import OrganicMaterial, PreviousCrop, Rainfall, SoilType
+from rb209.models import OrganicMaterial, PreviousCrop, Rainfall, SoilType, VegPreviousCrop, VegSoilType
 
 
 def _crop_choices() -> list[str]:
@@ -56,6 +58,7 @@ def _handle_recommend(args: argparse.Namespace) -> None:
     soil = getattr(args, "soil_type", None)
     expected_yield = getattr(args, "expected_yield", None)
     ber = getattr(args, "ber", None)
+    k_upper_half = getattr(args, "k_upper_half", False)
     rec = recommend_all(
         crop=args.crop,
         sns_index=args.sns_index,
@@ -66,6 +69,7 @@ def _handle_recommend(args: argparse.Namespace) -> None:
         soil_type=soil,
         expected_yield=expected_yield,
         ber=ber,
+        k_upper_half=k_upper_half,
     )
     print(format_recommendation(rec, args.output_format))
 
@@ -171,6 +175,27 @@ def _handle_timing(args: argparse.Namespace) -> None:
     print(format_timing(result, args.output_format))
 
 
+def _handle_veg_sns(args: argparse.Namespace) -> None:
+    result = calculate_veg_sns(args.previous_crop, args.soil_type, args.rainfall)
+    print(format_sns(result, args.output_format))
+
+
+def _handle_veg_smn(args: argparse.Namespace) -> None:
+    index = smn_to_sns_index_veg(args.smn, args.depth)
+    # Build an SNSResult-like object for formatting
+    from rb209.models import SNSResult
+    result = SNSResult(
+        sns_index=index,
+        method="veg-smn",
+        smn=args.smn,
+        notes=[
+            f"SMN ({args.smn:.1f} kg N/ha to {args.depth} cm depth) "
+            f"gives SNS Index {index} (Table 6.6).",
+        ],
+    )
+    print(format_sns(result, args.output_format))
+
+
 def _handle_list_crops(args: argparse.Namespace) -> None:
     crops = []
     for value, info in sorted(CROP_INFO.items()):
@@ -244,6 +269,12 @@ def build_parser() -> argparse.ArgumentParser:
                             "Break-even ratio (fertiliser N cost £/kg ÷ grain "
                             "value £/kg). Default: 5.0. Only affects wheat and "
                             "barley N recommendations."
+                        ))
+    p_rec.add_argument("--k-upper-half", "-ku", dest="k_upper_half",
+                        action="store_true", default=False,
+                        help=(
+                            "Use K Index 2+ value (181–240 mg/l) instead of 2- "
+                            "for vegetable crops at K Index 2."
                         ))
     _add_format_arg(p_rec)
     p_rec.set_defaults(func=_handle_recommend)
@@ -462,10 +493,47 @@ def build_parser() -> argparse.ArgumentParser:
     _add_format_arg(p_tim)
     p_tim.set_defaults(func=_handle_timing)
 
+    # ── veg-sns ──────────────────────────────────────────────────
+    p_veg_sns = subparsers.add_parser(
+        "veg-sns",
+        help="Calculate SNS index for vegetable crops (Tables 6.2–6.4)",
+    )
+    p_veg_sns.add_argument("--previous-crop", required=True,
+                            choices=[p.value for p in VegPreviousCrop],
+                            help="Previous crop category (vegetable SNS tables)")
+    p_veg_sns.add_argument("--soil-type", required=True,
+                            choices=[s.value for s in VegSoilType],
+                            help=(
+                                "Soil type for vegetable SNS "
+                                "(light-sand, medium, deep-clay, deep-silt, organic, peat)"
+                            ))
+    p_veg_sns.add_argument("--rainfall", required=True,
+                            choices=["low", "moderate", "high"],
+                            help=(
+                                "Rainfall category: low (<600 mm / <150 mm EWR), "
+                                "moderate (600–700 mm), high (>700 mm / >250 mm EWR)"
+                            ))
+    _add_format_arg(p_veg_sns)
+    p_veg_sns.set_defaults(func=_handle_veg_sns)
+
+    # ── veg-smn ──────────────────────────────────────────────────
+    p_veg_smn = subparsers.add_parser(
+        "veg-smn",
+        help="Calculate SNS index for vegetable crops from SMN measurement (Table 6.6)",
+    )
+    p_veg_smn.add_argument("--smn", required=True, type=float,
+                            metavar="kg/ha",
+                            help="Soil Mineral Nitrogen (kg N/ha)")
+    p_veg_smn.add_argument("--depth", required=True, type=int,
+                            choices=[30, 60, 90],
+                            help="Sampling depth (cm): 30, 60, or 90")
+    _add_format_arg(p_veg_smn)
+    p_veg_smn.set_defaults(func=_handle_veg_smn)
+
     # ── list-crops ───────────────────────────────────────────────
     p_lc = subparsers.add_parser("list-crops", help="List available crops")
     p_lc.add_argument("--category",
-                       choices=["arable", "grassland", "potatoes"],
+                       choices=["arable", "grassland", "potatoes", "vegetables"],
                        help="Filter by crop category")
     _add_format_arg(p_lc)
     p_lc.set_defaults(func=_handle_list_crops)
