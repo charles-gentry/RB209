@@ -2,7 +2,7 @@
 
 A command-line tool for calculating fertiliser recommendations for UK agricultural crops, implementing the RB209 9th edition tables from Defra/AHDB.
 
-- **56 crop types** across arable, grassland, potato, and vegetable categories
+- **74 crop types** across arable, grassland, potato, vegetable, and fruit categories
 - Nitrogen, phosphorus, potassium, magnesium, sulfur, sodium, and lime recommendations
 - Soil Nitrogen Supply (SNS) index via field assessment (Tables 4.3–4.5) or direct SMN measurement
 - **Vegetable SNS** via Tables 6.2–6.4 (11 previous-crop categories, 4 mineral soil columns) using the new `veg-sns` command; SMN conversion via Table 6.6 using `veg-smn`
@@ -108,9 +108,11 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `sns-ley` | Calculate SNS index from grass ley history (Table 4.6) |
 | `veg-sns` | Calculate SNS index for vegetable crops (Tables 6.2–6.4) |
 | `veg-smn` | Calculate SNS index for vegetable crops from SMN (Table 6.6) |
+| `fruit-recommend` | Full N/P/K/Mg recommendation for a fruit, vine or hop crop (Section 7) |
+| `fruit-nitrogen` | Nitrogen-only recommendation for a fruit, vine or hop crop (Section 7) |
 | `organic` | Calculate nutrients from organic material applications |
 | `lime` | Calculate lime requirement to raise soil pH |
-| `list-crops` | List all supported crops (use `--category vegetables` to filter) |
+| `list-crops` | List all supported crops (use `--category fruit` to filter) |
 | `list-materials` | List all supported organic materials |
 
 See [CLI.md](CLI.md) for the full command reference with all arguments and examples.
@@ -125,7 +127,9 @@ See [CLI.md](CLI.md) for the full command reference with all arguments and examp
 
 **Vegetables** (34 crops, RB209 Section 6) -- asparagus (establishment / subsequent), Brussels sprouts, storage cabbage, head cabbage (pre/post 31 Dec), collards (pre/post 31 Dec), cauliflower (summer/autumn, winter seedbed, winter top dressing), calabrese, self-blanching celery (seedbed N), peas (market pick), broad beans, dwarf/runner beans (seedbed N), radish, sweetcorn, lettuce (whole head / baby leaf), wild rocket, bulb onions, salad onions, leeks, beetroot, swedes, turnips and parsnips, carrots, bulbs and bulb flowers, coriander, mint (establishment / subsequent), courgettes (seedbed N / top dressing N)
 
-Run `rb209 list-crops --category vegetables` to see all vegetable slugs.
+**Fruit, Vines and Hops** (18 crops, RB209 Section 7) -- fruit and vines (pre-planting), hops (pre-planting), dessert apples, culinary and cider apples, pears, cherries, plums, blackcurrants, redcurrants, gooseberries, raspberries, loganberries, tayberries, blackberries, strawberries (main season / everbearers), vines, hops
+
+Run `rb209 list-crops --category fruit` to see all fruit slugs. Use `rb209 fruit-recommend` for full N/P/K/Mg recommendations and `rb209 fruit-nitrogen` for nitrogen only.
 
 ## Requirements
 

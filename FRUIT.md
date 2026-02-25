@@ -2,7 +2,7 @@
 
 Source reference: `ref/section7_fruit_vines_hops.md` (RB209 9th edition, updated February 2020).
 
-**Implementation status: PLANNED** — Steps below are not yet implemented.
+**Implementation status: COMPLETE** — All steps implemented as of February 2026.
 
 ---
 

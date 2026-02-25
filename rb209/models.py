@@ -22,6 +22,20 @@ class VegSoilType(str, Enum):
     PEAT       = "peat"         # advisory only — SNS Index 4–6, consult FACTS
 
 
+class FruitSoilCategory(str, Enum):
+    """Soil category groups for fruit, vine and hop nitrogen recommendations (Section 7)."""
+    LIGHT_SAND = "light-sand"    # Light sand soils AND shallow soils
+    DEEP_SILT  = "deep-silt"    # Deep silty soils
+    CLAY       = "clay"          # Deep clayey soils
+    OTHER      = "other-mineral" # Medium soils, organic soils, peat soils
+
+
+class OrchardManagement(str, Enum):
+    """Orchard floor management system for top fruit nitrogen recommendations (Section 7)."""
+    GRASS_STRIP   = "grass-strip"   # Grass alley with herbicide strip under trees
+    OVERALL_GRASS = "overall-grass" # Overall grass (or very weedy) management
+
+
 class VegPreviousCrop(str, Enum):
     """Previous crop categories for vegetable SNS tables (Section 6)."""
     BEANS       = "beans"

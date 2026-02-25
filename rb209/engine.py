@@ -1,11 +1,13 @@
 """Recommendation engine — core logic for RB209 fertiliser calculations."""
 
 from rb209.models import (
+    FruitSoilCategory,
     LimeRecommendation,
     NResidueCategory,
     NitrogenSplit,
     NitrogenTimingResult,
     NutrientRecommendation,
+    OrchardManagement,
     OrganicMaterial,
     OrganicNutrients,
     PREVIOUS_CROP_N_CATEGORY,
@@ -52,6 +54,17 @@ from rb209.data.sodium import (
     SODIUM_GRASSLAND_RATE,
     SODIUM_NOTES,
     SODIUM_RECOMMENDATIONS,
+)
+from rb209.data.fruit import (
+    FRUIT_PREPLANT_PKM,
+    FRUIT_TOP_NITROGEN,
+    FRUIT_TOP_PKM,
+    FRUIT_SOFT_NITROGEN,
+    FRUIT_SOFT_PKM,
+    FRUIT_STRAWBERRY_NITROGEN,
+    FRUIT_STRAWBERRY_PKM,
+    FRUIT_HOPS_NITROGEN,
+    FRUIT_HOPS_PKM,
 )
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
@@ -938,6 +951,324 @@ def recommend_all(
         magnesium=mg,
         sulfur=s,
         sodium=na,
+        notes=notes,
+    )
+
+
+# ── Fruit, Vines and Hops (Section 7) ─────────────────────────────
+
+_TOP_FRUIT_SLUGS = frozenset({
+    "fruit-dessert-apple", "fruit-culinary-apple",
+    "fruit-pear", "fruit-cherry", "fruit-plum",
+})
+_STRAWBERRY_SLUGS = frozenset({"fruit-strawberry-main", "fruit-strawberry-ever"})
+_SOFT_FRUIT_SLUGS = frozenset({
+    "fruit-blackcurrant", "fruit-redcurrant", "fruit-gooseberry",
+    "fruit-raspberry", "fruit-loganberry", "fruit-tayberry",
+    "fruit-blackberry", "fruit-vine",
+})
+_PREPLANT_SLUGS = frozenset({"fruit-preplant", "hops-preplant"})
+
+
+def _is_fruit_crop(crop: str) -> bool:
+    return CROP_INFO.get(crop, {}).get("category") == "fruit"
+
+
+def recommend_fruit_nitrogen(
+    crop: str,
+    soil_category: str,
+    orchard_management: str | None = None,
+    sns_index: int | None = None,
+) -> float:
+    """Return kg N/ha for a fruit, vine or hop crop.
+
+    Args:
+        crop: A fruit crop slug (category == "fruit").
+        soil_category: FruitSoilCategory value.
+        orchard_management: OrchardManagement value; required for top fruit only.
+        sns_index: SNS index 0–5; required for strawberry crops only.
+
+    Returns:
+        Nitrogen recommendation in kg N/ha.
+
+    Raises:
+        ValueError: If crop is unknown, parameters are missing/invalid, or no
+                    table entry exists for the given combination.
+    """
+    if crop not in CROP_INFO:
+        raise ValueError(f"Unknown crop '{crop}'.")
+    if not _is_fruit_crop(crop):
+        raise ValueError(f"Crop '{crop}' is not a fruit category crop.")
+
+    try:
+        FruitSoilCategory(soil_category)
+    except ValueError:
+        valid = ", ".join(c.value for c in FruitSoilCategory)
+        raise ValueError(
+            f"Unknown soil category '{soil_category}'. Valid options: {valid}"
+        )
+
+    if crop in _PREPLANT_SLUGS:
+        return 0.0
+
+    if crop in _TOP_FRUIT_SLUGS:
+        if orchard_management is None:
+            raise ValueError(
+                f"orchard_management is required for top fruit crop '{crop}'. "
+                "Use 'grass-strip' or 'overall-grass'."
+            )
+        try:
+            OrchardManagement(orchard_management)
+        except ValueError:
+            valid = ", ".join(m.value for m in OrchardManagement)
+            raise ValueError(
+                f"Unknown orchard management '{orchard_management}'. "
+                f"Valid options: {valid}"
+            )
+        key = (crop, soil_category, orchard_management)
+        if key not in FRUIT_TOP_NITROGEN:
+            raise ValueError(
+                f"No nitrogen data for top fruit combination: "
+                f"crop={crop}, soil={soil_category}, management={orchard_management}"
+            )
+        return FRUIT_TOP_NITROGEN[key]
+
+    if crop in _STRAWBERRY_SLUGS:
+        if sns_index is None:
+            raise ValueError(
+                f"sns_index is required for strawberry crop '{crop}'."
+            )
+        if isinstance(sns_index, bool) or not isinstance(sns_index, int) or sns_index < 0:
+            raise ValueError(
+                f"sns_index must be a non-negative integer, got {sns_index!r}"
+            )
+        # Map clay → other-mineral for Table 7.8
+        mapped_soil = "other-mineral" if soil_category == "clay" else soil_category
+        clamped_sns = min(sns_index, 5)
+        key = (crop, mapped_soil, clamped_sns)
+        if key not in FRUIT_STRAWBERRY_NITROGEN:
+            raise ValueError(
+                f"No nitrogen data for strawberry combination: "
+                f"crop={crop}, soil={mapped_soil}, sns_index={clamped_sns}"
+            )
+        return FRUIT_STRAWBERRY_NITROGEN[key]
+
+    if crop == "fruit-hops":
+        if soil_category == "light-sand":
+            raise ValueError(
+                "Hops nitrogen is not given for light sand soils in Table 7.17. "
+                "Seek specialist advice."
+            )
+        if soil_category not in FRUIT_HOPS_NITROGEN:
+            raise ValueError(
+                f"No hops nitrogen data for soil category '{soil_category}'."
+            )
+        return FRUIT_HOPS_NITROGEN[soil_category]
+
+    if crop in _SOFT_FRUIT_SLUGS:
+        key = (crop, soil_category)
+        if key not in FRUIT_SOFT_NITROGEN:
+            raise ValueError(
+                f"No nitrogen data for soft fruit combination: "
+                f"crop={crop}, soil={soil_category}"
+            )
+        return FRUIT_SOFT_NITROGEN[key]
+
+    raise ValueError(f"No nitrogen recommendation logic for fruit crop '{crop}'.")
+
+
+def recommend_fruit_pkm(
+    crop: str,
+    p_index: int,
+    k_index: int,
+    mg_index: int,
+) -> tuple[float, float, float]:
+    """Return (P2O5, K2O, MgO) kg/ha for a fruit, vine or hop crop.
+
+    Args:
+        crop: A fruit crop slug.
+        p_index: Soil P index 0–9.
+        k_index: Soil K index 0–9.
+        mg_index: Soil Mg index 0–9.
+
+    Returns:
+        Tuple of (phosphate, potash, magnesium) in kg/ha.
+    """
+    if crop not in CROP_INFO:
+        raise ValueError(f"Unknown crop '{crop}'.")
+    if not _is_fruit_crop(crop):
+        raise ValueError(f"Crop '{crop}' is not a fruit category crop.")
+
+    _validate_index("P index", p_index, 0, 9)
+    _validate_index("K index", k_index, 0, 9)
+    _validate_index("Mg index", mg_index, 0, 9)
+
+    if crop == "fruit-preplant":
+        cp = _clamp_index(p_index, 5)
+        ck = _clamp_index(k_index, 5)
+        cm = _clamp_index(mg_index, 5)
+        return (
+            FRUIT_PREPLANT_PKM[("fruit-vines", "phosphate", cp)],
+            FRUIT_PREPLANT_PKM[("fruit-vines", "potash", ck)],
+            FRUIT_PREPLANT_PKM[("fruit-vines", "magnesium", cm)],
+        )
+
+    if crop == "hops-preplant":
+        cp = _clamp_index(p_index, 5)
+        ck = _clamp_index(k_index, 5)
+        cm = _clamp_index(mg_index, 5)
+        return (
+            FRUIT_PREPLANT_PKM[("hops", "phosphate", cp)],
+            FRUIT_PREPLANT_PKM[("hops", "potash", ck)],
+            FRUIT_PREPLANT_PKM[("hops", "magnesium", cm)],
+        )
+
+    if crop in _TOP_FRUIT_SLUGS:
+        cp = _clamp_index(p_index, 4)
+        ck = _clamp_index(k_index, 4)
+        cm = _clamp_index(mg_index, 4)
+        return (
+            FRUIT_TOP_PKM[("phosphate", cp)],
+            FRUIT_TOP_PKM[("potash", ck)],
+            FRUIT_TOP_PKM[("magnesium", cm)],
+        )
+
+    if crop in _SOFT_FRUIT_SLUGS:
+        cp = _clamp_index(p_index, 4)
+        ck = _clamp_index(k_index, 4)
+        cm = _clamp_index(mg_index, 4)
+        return (
+            FRUIT_SOFT_PKM[(crop, "phosphate", cp)],
+            FRUIT_SOFT_PKM[(crop, "potash", ck)],
+            FRUIT_SOFT_PKM[(crop, "magnesium", cm)],
+        )
+
+    if crop in _STRAWBERRY_SLUGS:
+        cp = _clamp_index(p_index, 4)
+        ck = _clamp_index(k_index, 4)
+        cm = _clamp_index(mg_index, 4)
+        return (
+            FRUIT_STRAWBERRY_PKM[("phosphate", cp)],
+            FRUIT_STRAWBERRY_PKM[("potash", ck)],
+            FRUIT_STRAWBERRY_PKM[("magnesium", cm)],
+        )
+
+    if crop == "fruit-hops":
+        cp = _clamp_index(p_index, 5)
+        ck = _clamp_index(k_index, 5)
+        cm = _clamp_index(mg_index, 5)
+        return (
+            FRUIT_HOPS_PKM[("phosphate", cp)],
+            FRUIT_HOPS_PKM[("potash", ck)],
+            FRUIT_HOPS_PKM[("magnesium", cm)],
+        )
+
+    raise ValueError(f"No P/K/Mg recommendation logic for fruit crop '{crop}'.")
+
+
+def recommend_fruit_all(
+    crop: str,
+    soil_category: str,
+    p_index: int,
+    k_index: int,
+    mg_index: int,
+    orchard_management: str | None = None,
+    sns_index: int | None = None,
+) -> NutrientRecommendation:
+    """Return full N/P/K/Mg recommendation for a fruit, vine or hop crop.
+
+    Args:
+        crop: A fruit crop slug (category == "fruit").
+        soil_category: FruitSoilCategory value.
+        p_index: Soil P index 0–9.
+        k_index: Soil K index 0–9.
+        mg_index: Soil Mg index 0–9.
+        orchard_management: OrchardManagement value; required for top fruit.
+        sns_index: SNS index 0–5; required for strawberry crops.
+
+    Returns:
+        NutrientRecommendation with N, P, K, Mg, S and advisory notes.
+    """
+    n = recommend_fruit_nitrogen(
+        crop, soil_category,
+        orchard_management=orchard_management,
+        sns_index=sns_index,
+    )
+    p, k, mg = recommend_fruit_pkm(crop, p_index, k_index, mg_index)
+    s = SULFUR_RECOMMENDATIONS.get(crop, 0.0)
+
+    notes: list[str] = []
+    info = CROP_INFO[crop]
+    if info.get("notes"):
+        notes.append(info["notes"])
+
+    # Fruit sulphur advisory
+    notes.append(
+        "Fruit crops do not routinely require sulphur. Apply 15–25 kg SO\u2083/ha "
+        "as sulphate in spring where deficiency is recognised, on light sandy or "
+        "low-OM soils."
+    )
+
+    # Top fruit N excess warning
+    if crop in _TOP_FRUIT_SLUGS:
+        notes.append(
+            "Excess nitrogen reduces red colour in apples, encourages large dark "
+            "leaves and can reduce storage life. Consider leaf and fruit analysis."
+        )
+
+    # Cider apple K note
+    if crop == "fruit-culinary-apple":
+        notes.append(
+            "Cider apples respond to Soil K Index 3. Consider applying K at "
+            "Index 3 if growing cider apples."
+        )
+
+    # Blackcurrant Ben-series note
+    if crop == "fruit-blackcurrant":
+        notes.append("Ben-series varieties typically require only 70–120 kg N/ha.")
+
+    # Sulphate of potash note for raspberries/redcurrants/gooseberries
+    _SOP_CROPS = {"fruit-redcurrant", "fruit-gooseberry", "fruit-raspberry"}
+    if crop in _SOP_CROPS and k_index in (0, 1) and k > 120:
+        notes.append("Use sulphate of potash for this crop.")
+
+    # Hops notes
+    if crop == "fruit-hops":
+        notes.append(
+            "Where Verticillium wilt risk is present, reduce N to 125–165 kg N/ha."
+        )
+        notes.append(
+            "Reduce N by 70 kg/ha where large frequent organic manure applications "
+            "have been used in the previous year."
+        )
+        notes.append(
+            "Split N into 2–3 dressings: late March/April, May, and late "
+            "June/early July."
+        )
+        notes.append(
+            "Ensure soil K:Mg ratio (mg/litre) does not exceed 3:1 to avoid "
+            "induced magnesium deficiency."
+        )
+
+    # Strawberry notes
+    if crop in _STRAWBERRY_SLUGS:
+        notes.append(
+            "Nitrogen recommendations are based on SNS Index. Use `veg-sns` or "
+            "`veg-smn` commands to determine SNS Index (Section 6 system)."
+        )
+        notes.append(
+            "Ensure soil K:Mg ratio (mg/litre) does not exceed 3:1 to avoid "
+            "induced magnesium deficiency."
+        )
+
+    return NutrientRecommendation(
+        crop=info["name"],
+        nitrogen=n,
+        phosphorus=p,
+        potassium=k,
+        magnesium=mg,
+        sulfur=s,
+        sodium=0.0,
         notes=notes,
     )
 

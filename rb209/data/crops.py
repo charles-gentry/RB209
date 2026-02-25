@@ -343,4 +343,122 @@ CROP_INFO: dict[str, dict] = {
         "has_straw_option": False,
         "notes": "Top dressing applied after establishment. P2O5 and K2O are applied in the seedbed; only N is included here.",
     },
+
+    # ── Fruit, Vines and Hops (Section 7) ────────────────────────────
+
+    # Pre-planting
+    "fruit-preplant": {
+        "name": "Fruit and Vines (before planting)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "No N required before planting. Apply K in autumn and incorporate to avoid root scorch.",
+    },
+    "hops-preplant": {
+        "name": "Hops (before planting)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "Potted hop plants benefit from 70–80 kg N/ha applied in spring before planting.",
+    },
+
+    # Top fruit (established orchards)
+    "fruit-dessert-apple": {
+        "name": "Dessert Apples (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category and orchard management. Larger N may be needed for varieties with regular heavy cropping potential (>40 t/ha).",
+    },
+    "fruit-culinary-apple": {
+        "name": "Culinary and Cider Apples (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category and orchard management. Cider apples respond to K Index 3 and Mg Index 3.",
+    },
+    "fruit-pear": {
+        "name": "Pears (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category and orchard management.",
+    },
+    "fruit-cherry": {
+        "name": "Cherries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category and orchard management.",
+    },
+    "fruit-plum": {
+        "name": "Plums (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category and orchard management.",
+    },
+
+    # Soft fruit and vines (established)
+    "fruit-blackcurrant": {
+        "name": "Blackcurrants (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Ben-series varieties typically require 70–120 kg N/ha.",
+    },
+    "fruit-redcurrant": {
+        "name": "Redcurrants (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Use sulphate of potash where K > 120 kg/ha.",
+    },
+    "fruit-gooseberry": {
+        "name": "Gooseberries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Use sulphate of potash where K > 120 kg/ha.",
+    },
+    "fruit-raspberry": {
+        "name": "Raspberries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Use sulphate of potash where K > 120 kg/ha.",
+    },
+    "fruit-loganberry": {
+        "name": "Loganberries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category.",
+    },
+    "fruit-tayberry": {
+        "name": "Tayberries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category.",
+    },
+    "fruit-blackberry": {
+        "name": "Blackberries (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category.",
+    },
+    "fruit-strawberry-main": {
+        "name": "Strawberries — Main Season (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by SNS index and soil category (Table 7.8). Uses Section 6 SNS assessment.",
+    },
+    "fruit-strawberry-ever": {
+        "name": "Strawberries — Everbearers (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by SNS index and soil category (Table 7.8). Higher N than main season.",
+    },
+    "fruit-vine": {
+        "name": "Vines (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Reduce N where growth is excessive.",
+    },
+
+    # Hops
+    "fruit-hops": {
+        "name": "Hops (established)",
+        "category": "fruit",
+        "has_straw_option": False,
+        "notes": "N by soil category. Split N into 2–3 dressings: late March/April, May, late June/early July.",
+    },
 }
