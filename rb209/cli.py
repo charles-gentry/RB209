@@ -18,6 +18,7 @@ from rb209.engine import (
     recommend_nitrogen,
     recommend_phosphorus,
     recommend_potassium,
+    recommend_sodium,
     recommend_sulfur,
     smn_to_sns_index_veg,
 )
@@ -101,6 +102,13 @@ def _handle_sulfur(args: argparse.Namespace) -> None:
     value = recommend_sulfur(args.crop)
     name = CROP_INFO[args.crop]["name"]
     print(format_single_nutrient(name, "Sulfur (SO3)", "kg/ha", value, args.output_format))
+
+
+def _handle_sodium(args: argparse.Namespace) -> None:
+    k_index = getattr(args, "k_index", None)
+    value = recommend_sodium(args.crop, k_index=k_index)
+    name = CROP_INFO[args.crop]["name"]
+    print(format_single_nutrient(name, "Sodium (Na2O)", "kg/ha", value, args.output_format))
 
 
 def _handle_sns(args: argparse.Namespace) -> None:
@@ -340,6 +348,19 @@ def build_parser() -> argparse.ArgumentParser:
                       help="Crop type")
     _add_format_arg(p_s)
     p_s.set_defaults(func=_handle_sulfur)
+
+    # ── sodium ───────────────────────────────────────────────────
+    p_na = subparsers.add_parser(
+        "sodium",
+        help="Sodium recommendation (sugar beet, asparagus, grassland)",
+    )
+    p_na.add_argument("--crop", required=True, choices=_crop_choices(),
+                       help="Crop type")
+    p_na.add_argument("--k-index", type=int, default=None,
+                       metavar="0-9",
+                       help="Soil potassium index (required for sugar beet)")
+    _add_format_arg(p_na)
+    p_na.set_defaults(func=_handle_sodium)
 
     # ── sns ──────────────────────────────────────────────────────
     p_sns = subparsers.add_parser(

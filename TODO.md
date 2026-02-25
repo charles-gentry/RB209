@@ -36,13 +36,9 @@ with no quantitative values to implement.
   are not populated in `NVZ_NMAX`.  The engine will not issue an N-max
   warning for vegetable crops that exceed typical thresholds.
 
-### Sodium Recommendations
-- **Source**: RB209 Section 6, asparagus and celery notes
-- **Status**: Blocked — requires a general sodium module (new nutrient type).
-- **Description**: Asparagus may require up to 500 kg Na₂O/ha; celery
-  responds to sodium on most soils.  Sodium is not currently a supported
-  nutrient in the engine.  Requires adding Na₂O to the nutrient model before
-  crop-specific recommendations can be exposed.
+### ~~Sodium Recommendations~~ ✓
+- **Source**: RB209 Section 4 Table 4.36, Section 6, Section 3
+- **Status**: Implemented.  See Recently Completed section below.
 
 ### Leaf Analysis Tables
 - **Source**: RB209 Tables 6.10, 6.13, 6.15, 6.21, 6.23
@@ -74,6 +70,26 @@ with no quantitative values to implement.
 ---
 
 ## Recently Completed
+
+### ~~Sodium (Na₂O) Recommendations~~ ✓
+- **Source**: RB209 Section 4 Table 4.36 (sugar beet), Section 6
+  (asparagus, celery), Section 3 (grassland)
+- **Status**: Implemented.  A new `rb209/data/sodium.py` data module and
+  `recommend_sodium()` engine function provide Na₂O recommendations for:
+  - **Sugar beet** — K-Index-dependent rates from Table 4.36: 200 kg Na₂O/ha
+    at K Index 0–1, 100 at K Index 2, 0 at K Index 3+.  Advisory notes cover
+    the 25 mg Na/l threshold at K2, fen peat/silt/clay exclusion, and seedbed
+    incorporation timing.
+  - **Asparagus (subsequent years)** — flat rate of 500 kg Na₂O/ha per year
+    (end of June).  Establishment year returns 0 with an advisory note.
+  - **Grassland** — 140 kg Na₂O/ha in early spring for herbage mineral
+    balance where Na < 0.15% DM or K:Na > 20:1.
+  - **Celery** — advisory note only (responsive on most soils except peat/fen
+    silt); no quantitative rate in RB209.
+  - Na₂O is included in the `NutrientRecommendation` model, in
+    `recommend_all()` output, in the `recommend` command's table and JSON
+    formats, and as a standalone `sodium` CLI command.
+  - 32 new tests in `tests/test_sodium.py`.
 
 ### ~~Organic Soil Vegetable SNS — Full Field Assessment~~ ✓
 - **Source**: RB209 Tables 6.2–6.4
@@ -135,4 +151,4 @@ with no quantitative values to implement.
 
 ---
 
-*Last updated: 2026-02-24 (organic soil veg SNS completed).*
+*Last updated: 2026-02-25 (sodium recommendations implemented).*

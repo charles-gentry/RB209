@@ -55,6 +55,7 @@ def format_recommendation(rec: NutrientRecommendation, fmt: str = "table") -> st
         ("Potassium (K2O)", f"{rec.potassium:.0f} kg/ha"),
         ("Magnesium (MgO)", f"{rec.magnesium:.0f} kg/ha"),
         ("Sulfur (SO3)", f"{rec.sulfur:.0f} kg/ha"),
+        ("Sodium (Na2O)", f"{rec.sodium:.0f} kg/ha"),
     ]
     return _box(f"Nutrient Recommendations — {rec.crop}", rows, rec.notes)
 

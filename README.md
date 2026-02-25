@@ -3,7 +3,7 @@
 A command-line tool for calculating fertiliser recommendations for UK agricultural crops, implementing the RB209 9th edition tables from Defra/AHDB.
 
 - **56 crop types** across arable, grassland, potato, and vegetable categories
-- Nitrogen, phosphorus, potassium, magnesium, sulfur, and lime recommendations
+- Nitrogen, phosphorus, potassium, magnesium, sulfur, sodium, and lime recommendations
 - Soil Nitrogen Supply (SNS) index via field assessment (Tables 4.3–4.5) or direct SMN measurement
 - **Vegetable SNS** via Tables 6.2–6.4 (11 previous-crop categories, 4 mineral soil columns) using the new `veg-sns` command; SMN conversion via Table 6.6 using `veg-smn`
 - **K Index 2 split for vegetables** — `--k-upper-half` flag distinguishes 2- (121–180 mg/l) from 2+ (181–240 mg/l)
@@ -11,7 +11,8 @@ A command-line tool for calculating fertiliser recommendations for UK agricultur
 - Grass ley SNS calculation from RB209 Table 4.6 — looks up SNS indices by ley age (1–2yr / 3–5yr), N-intensity, and management regime (cut / grazed / 1-cut-then-grazed) for up to three years after ploughing out, with `combine_sns` to select the higher of field-assessment and grass-ley SNS indices as required by RB209
 - Crop history support — `calculate_sns` accepts an optional `grass_history` parameter to automatically combine field-assessment and Table 4.6 results when the previous crop followed a grass ley (e.g. winter wheat after spring barley after a 2-year ley)
 - Organic material nutrient calculations (manures, composts, slurries) with timing- and incorporation-adjusted available-N for all major livestock manures and biosolids (RB209 Section 2 Tables 2.3, 2.6, 2.9, 2.12, 2.15)
-- Contextual advisory notes — NVZ N-max warnings, potash split advice for potatoes and grass silage, hypomagnesaemia risk on grassland, clover N-fixation inhibition, over-liming trace-element warnings, combine-drill seedbed limit on sandy soils, lime-before-potatoes common scab risk, vegetable seedbed N cap, leeks NVZ closed period, lettuce/rocket nitrate limits, celery top-dressing reminder
+- **Sodium (Na₂O) recommendations** — sugar beet (Table 4.36, K-Index-dependent), asparagus (500 kg Na₂O/ha subsequent years), grassland (140 kg Na₂O/ha for herbage mineral balance), with celery advisory notes
+- Contextual advisory notes — NVZ N-max warnings, potash split advice for potatoes and grass silage, hypomagnesaemia risk on grassland, clover N-fixation inhibition, over-liming trace-element warnings, combine-drill seedbed limit on sandy soils, lime-before-potatoes common scab risk, vegetable seedbed N cap, leeks NVZ closed period, lettuce/rocket nitrate limits, celery top-dressing reminder, sodium application notes
 - **Nitrogen application timing** — `timing` command returns per-dressing schedule and amounts for all major crop types including all 34 vegetable crops, taking into account the total N rate (single vs split dressings) and soil type; vegetable crops use the RB209 Section 6 seedbed-cap rule (≤100 kg N/ha in seedbed, remainder as top dressing after establishment)
 - **Yield-adjusted recommendations** — optional `--expected-yield` flag on `recommend`, `nitrogen`, `phosphorus`, and `potassium` commands scales N, P2O5, and K2O for deviations from the RB209 baseline yield; supported for 19 vegetable crops (RB209 Tables 6.27 + 6.8), winter wheat, winter oats, and potatoes
 - **Break-even ratio (BER) adjustment** — optional `--ber` flag on `recommend` and `nitrogen` commands adjusts cereal N recommendations based on the fertiliser cost to grain price ratio (RB209 Tables 4.25–4.26), with linear interpolation between table values
@@ -64,6 +65,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 1 --p-index 2 --k-index 1
 |   Potassium (K2O)      75 kg/ha                  |
 |   Magnesium (MgO)       0 kg/ha                  |
 |   Sulfur (SO3)         30 kg/ha                  |
+|   Sodium (Na2O)         0 kg/ha                  |
 +--------------------------------------------------+
 | K recommendation assumes straw removed.          |
 | Feed wheat variety. For milling wheat use winter |
@@ -82,6 +84,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
   "potassium": 75,
   "magnesium": 0,
   "sulfur": 30,
+  "sodium": 0,
   "notes": [
     "K recommendation assumes straw removed.",
     "Feed wheat variety. For milling wheat use winter-wheat-milling."
@@ -93,11 +96,12 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 
 | Command | Description |
 |---------|-------------|
-| `recommend` | Full NPK + sulfur + magnesium recommendation for a crop |
+| `recommend` | Full NPK + sulfur + magnesium + sodium recommendation for a crop |
 | `nitrogen` | Nitrogen recommendation only |
 | `phosphorus` | Phosphorus recommendation only |
 | `potassium` | Potassium recommendation only (with straw management options) |
 | `sulfur` | Sulfur recommendation only |
+| `sodium` | Sodium recommendation (sugar beet, asparagus, grassland) |
 | `timing` | Nitrogen application timing and dressing schedule for a crop |
 | `sns` | Calculate SNS index from field assessment (Tables 4.3–4.5) |
 | `sns-smn` | Calculate SNS index from direct soil mineral N measurement |
