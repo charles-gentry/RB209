@@ -15,6 +15,8 @@ from rb209.engine import (
     calculate_veg_sns,
     nitrogen_timing,
     recommend_all,
+    recommend_fruit_all,
+    recommend_fruit_nitrogen,
     recommend_nitrogen,
     recommend_phosphorus,
     recommend_potassium,
@@ -32,7 +34,16 @@ from rb209.formatters import (
     format_sns,
     format_timing,
 )
-from rb209.models import OrganicMaterial, PreviousCrop, Rainfall, SoilType, VegPreviousCrop, VegSoilType
+from rb209.models import (
+    FruitSoilCategory,
+    OrchardManagement,
+    OrganicMaterial,
+    PreviousCrop,
+    Rainfall,
+    SoilType,
+    VegPreviousCrop,
+    VegSoilType,
+)
 
 
 def _crop_choices() -> list[str]:
@@ -202,6 +213,34 @@ def _handle_veg_smn(args: argparse.Namespace) -> None:
         ],
     )
     print(format_sns(result, args.output_format))
+
+
+def _handle_fruit_recommend(args: argparse.Namespace) -> None:
+    orchard_management = getattr(args, "orchard_management", None)
+    sns_index = getattr(args, "sns_index", None)
+    rec = recommend_fruit_all(
+        crop=args.crop,
+        soil_category=args.soil_category,
+        p_index=args.p_index,
+        k_index=args.k_index,
+        mg_index=args.mg_index,
+        orchard_management=orchard_management,
+        sns_index=sns_index,
+    )
+    print(format_recommendation(rec, args.output_format))
+
+
+def _handle_fruit_nitrogen(args: argparse.Namespace) -> None:
+    orchard_management = getattr(args, "orchard_management", None)
+    sns_index = getattr(args, "sns_index", None)
+    value = recommend_fruit_nitrogen(
+        crop=args.crop,
+        soil_category=args.soil_category,
+        orchard_management=orchard_management,
+        sns_index=sns_index,
+    )
+    name = CROP_INFO[args.crop]["name"]
+    print(format_single_nutrient(name, "Nitrogen (N)", "kg/ha", value, args.output_format))
 
 
 def _handle_list_crops(args: argparse.Namespace) -> None:
@@ -551,10 +590,78 @@ def build_parser() -> argparse.ArgumentParser:
     _add_format_arg(p_veg_smn)
     p_veg_smn.set_defaults(func=_handle_veg_smn)
 
+    # ── fruit-recommend ──────────────────────────────────────────
+    _fruit_slugs = sorted(
+        v for v, info in CROP_INFO.items() if info.get("category") == "fruit"
+    )
+    p_frec = subparsers.add_parser(
+        "fruit-recommend",
+        help="Full N/P/K/Mg recommendation for a fruit, vine or hop crop (Section 7)",
+    )
+    p_frec.add_argument("crop", choices=_fruit_slugs, help="Fruit crop slug")
+    p_frec.add_argument(
+        "--soil-category", "-sc", required=True,
+        choices=[c.value for c in FruitSoilCategory],
+        dest="soil_category",
+        help="Soil category for fruit/vine/hop nitrogen recommendation "
+             "(light-sand | deep-silt | clay | other-mineral)",
+    )
+    p_frec.add_argument("--p-index", "-p", required=True, type=int,
+                         metavar="0-9", dest="p_index",
+                         help="Soil phosphorus index (0-9)")
+    p_frec.add_argument("--k-index", "-k", required=True, type=int,
+                         metavar="0-9", dest="k_index",
+                         help="Soil potassium index (0-9)")
+    p_frec.add_argument("--mg-index", "-mg", required=True, type=int,
+                         metavar="0-9", dest="mg_index",
+                         help="Soil magnesium index (0-9)")
+    p_frec.add_argument(
+        "--orchard-management", "-om", default=None,
+        choices=[m.value for m in OrchardManagement],
+        dest="orchard_management",
+        help="Orchard management system for top fruit nitrogen "
+             "(grass-strip | overall-grass)",
+    )
+    p_frec.add_argument(
+        "--sns-index", "-sns", type=int, default=None,
+        metavar="0-5", dest="sns_index",
+        help="SNS index (0-5); required for strawberry crops",
+    )
+    _add_format_arg(p_frec)
+    p_frec.set_defaults(func=_handle_fruit_recommend)
+
+    # ── fruit-nitrogen ────────────────────────────────────────────
+    p_fn = subparsers.add_parser(
+        "fruit-nitrogen",
+        help="Nitrogen recommendation for a fruit, vine or hop crop (Section 7)",
+    )
+    p_fn.add_argument("crop", choices=_fruit_slugs, help="Fruit crop slug")
+    p_fn.add_argument(
+        "--soil-category", "-sc", required=True,
+        choices=[c.value for c in FruitSoilCategory],
+        dest="soil_category",
+        help="Soil category for fruit/vine/hop nitrogen recommendation "
+             "(light-sand | deep-silt | clay | other-mineral)",
+    )
+    p_fn.add_argument(
+        "--orchard-management", "-om", default=None,
+        choices=[m.value for m in OrchardManagement],
+        dest="orchard_management",
+        help="Orchard management system for top fruit nitrogen "
+             "(grass-strip | overall-grass)",
+    )
+    p_fn.add_argument(
+        "--sns-index", "-sns", type=int, default=None,
+        metavar="0-5", dest="sns_index",
+        help="SNS index (0-5); required for strawberry crops",
+    )
+    _add_format_arg(p_fn)
+    p_fn.set_defaults(func=_handle_fruit_nitrogen)
+
     # ── list-crops ───────────────────────────────────────────────
     p_lc = subparsers.add_parser("list-crops", help="List available crops")
     p_lc.add_argument("--category",
-                       choices=["arable", "grassland", "potatoes", "vegetables"],
+                       choices=["arable", "grassland", "potatoes", "vegetables", "fruit"],
                        help="Filter by crop category")
     _add_format_arg(p_lc)
     p_lc.set_defaults(func=_handle_list_crops)

@@ -80,4 +80,25 @@ SULFUR_RECOMMENDATIONS: dict[str, float] = {
     "veg-peas-market":  0,
     "veg-beans-broad":  0,
     "veg-beans-dwarf":  0,
+
+    # Fruit, vine and hop crops — no routine recommendation (Section 7)
+    # A response is possible on light/low-OM soils; advisory note in engine output.
+    "fruit-preplant":        0,
+    "hops-preplant":         0,
+    "fruit-dessert-apple":   0,
+    "fruit-culinary-apple":  0,
+    "fruit-pear":            0,
+    "fruit-cherry":          0,
+    "fruit-plum":            0,
+    "fruit-blackcurrant":    0,
+    "fruit-redcurrant":      0,
+    "fruit-gooseberry":      0,
+    "fruit-raspberry":       0,
+    "fruit-loganberry":      0,
+    "fruit-tayberry":        0,
+    "fruit-blackberry":      0,
+    "fruit-strawberry-main": 0,
+    "fruit-strawberry-ever": 0,
+    "fruit-vine":            0,
+    "fruit-hops":            0,
 }
