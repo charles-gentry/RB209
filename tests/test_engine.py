@@ -281,8 +281,14 @@ class TestNVZWarnings(unittest.TestCase):
         self.assertFalse(any("N-max" in n for n in rec.notes))
 
     def test_nvz_no_warning_for_crop_without_limit(self):
-        # sugar-beet is not in NVZ_NMAX
+        # linseed has no NVZ_NMAX entry — no warning expected
+        rec = recommend_all("linseed", sns_index=0, p_index=2, k_index=2)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_no_warning_sugar_beet_at_limit(self):
+        # sugar-beet NVZ limit is 120; recommendation at SNS 0 is also 120 → no warning
         rec = recommend_all("sugar-beet", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 120)
         self.assertFalse(any("N-max" in n for n in rec.notes))
 
     def test_nvz_warning_text_contains_values(self):
@@ -295,6 +301,60 @@ class TestNVZWarnings(unittest.TestCase):
         note = nvz_notes[0]
         self.assertIn("250", note)
         self.assertIn("220", note)
+
+    def test_nvz_spring_wheat_limit_180(self):
+        # spring-wheat SNS 0 = 160 kg/ha < 180 limit — no warning
+        rec = recommend_all("spring-wheat", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 160)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_spring_barley_warning_at_sns0(self):
+        # spring-barley SNS 0 = 160 kg/ha > 150 limit — warning expected
+        rec = recommend_all("spring-barley", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 160)
+        self.assertTrue(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_spring_barley_no_warning_at_sns1(self):
+        # spring-barley SNS 1 = 120 kg/ha < 150 limit — no warning
+        rec = recommend_all("spring-barley", sns_index=1, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 120)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_milling_wheat_limit_260(self):
+        # winter-wheat-milling SNS 0 = 260 kg/ha, limit 260 — at limit, no warning
+        rec = recommend_all("winter-wheat-milling", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 260)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_forage_maize_limit_150(self):
+        # forage-maize SNS 0 = 150, limit 150 — at limit, no warning
+        rec = recommend_all("forage-maize", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 150)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_veg_group1_carrots_limit_180(self):
+        # veg-carrots SNS 0 = 100 kg/ha < 180 limit — no warning
+        rec = recommend_all("veg-carrots", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 100)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_veg_group2_sweetcorn_limit_280(self):
+        # veg-sweetcorn SNS 0 = 220 kg/ha < 280 limit — no warning
+        rec = recommend_all("veg-sweetcorn", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 220)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_veg_group3_brussels_sprouts_limit_370(self):
+        # veg-brussels-sprouts SNS 0 = 330 kg/ha < 370 limit — no warning
+        rec = recommend_all("veg-brussels-sprouts", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 330)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
+
+    def test_nvz_grass_silage_limit_340(self):
+        # grass-silage SNS 0 = 320 kg/ha < 340 limit — no warning
+        rec = recommend_all("grass-silage", sns_index=0, p_index=2, k_index=2)
+        self.assertEqual(rec.nitrogen, 320)
+        self.assertFalse(any("N-max" in n for n in rec.notes))
 
 
 class TestPotashSplitWarnings(unittest.TestCase):
