@@ -212,25 +212,73 @@ NITROGEN_RECOMMENDATIONS: dict[tuple[str, int], float] = {
 # over the generic NITROGEN_RECOMMENDATIONS when soil_type is given.
 
 # NVZ whole-farm N-max limits by crop group (kg N/ha).
-# Source: RB209 Table 4.17 footnote "a", Defra NVZ guidance.
+# Source: Defra Nitrate Pollution Prevention Regulations 2015, Schedule 8
+# (reproduced in ref/NVZ max limits.md).
 NVZ_NMAX: dict[str, float] = {
+    # Wheat — autumn/early winter-sown base: 220; milling adds 40 → 260
     "winter-wheat-feed": 220,
-    "winter-wheat-milling": 220,
-    "spring-wheat": 220,
-    "winter-barley": 220,
-    "spring-barley": 220,
+    "winter-wheat-milling": 260,
+    # Spring-sown wheat: 180
+    "spring-wheat": 180,
+    # Barley
+    "winter-barley": 180,
+    "spring-barley": 150,
+    # Other cereals (not listed in Schedule 8; use wheat/barley analogues)
     "winter-oats": 220,
     "spring-oats": 220,
     "winter-rye": 220,
+    # Oilseed rape
     "winter-oilseed-rape": 250,
     "spring-oilseed-rape": 250,
+    # Grass — base 300; multi-cut silage (≥3 cuts) qualifies for +40 → 340
     "grass-grazed": 300,
-    "grass-silage": 300,
+    "grass-silage": 340,
     "grass-hay": 300,
     "grass-grazed-one-cut": 300,
+    # Other arable crops
+    "sugar-beet": 120,
+    "forage-maize": 150,
+    "field-beans": 0,
+    "peas": 0,
+    # Potatoes — all types: 270
     "potatoes-maincrop": 270,
     "potatoes-early": 270,
     "potatoes-seed": 270,
+    # Vegetables — Group 1: asparagus, carrots, radishes, swedes (180 kg/ha)
+    "veg-asparagus": 180,
+    "veg-asparagus-est": 180,
+    "veg-carrots": 180,
+    "veg-radish": 180,
+    "veg-swedes": 180,
+    # Vegetables — Group 2: celery, courgettes, dwarf/runner beans, lettuce,
+    #   onions, parsnips, runner beans, sweetcorn, turnips (280 kg/ha)
+    "veg-celery-seedbed": 280,
+    "veg-courgettes-seedbed": 280,
+    "veg-courgettes-topdress": 280,
+    "veg-beans-dwarf": 280,
+    "veg-lettuce-whole": 280,
+    "veg-lettuce-baby": 280,
+    "veg-onions-bulb": 280,
+    "veg-onions-salad": 280,
+    "veg-turnips-parsnips": 280,
+    "veg-sweetcorn": 280,
+    # Vegetables — Group 3: beetroot, brussels sprouts, cabbage, calabrese,
+    #   cauliflower, leeks (370 kg/ha)
+    "veg-beetroot": 370,
+    "veg-brussels-sprouts": 370,
+    "veg-cabbage-storage": 370,
+    "veg-cabbage-head-pre-dec": 370,
+    "veg-cabbage-head-post-dec": 370,
+    "veg-collards-pre-dec": 370,
+    "veg-collards-post-dec": 370,
+    "veg-calabrese": 370,
+    "veg-cauliflower-summer": 370,
+    "veg-cauliflower-winter-seedbed": 370,
+    "veg-cauliflower-winter-topdress": 370,
+    "veg-leeks": 370,
+    # N-fixing vegetable crops — no manufactured N permitted
+    "veg-peas-market": 0,
+    "veg-beans-broad": 0,
 }
 
 NITROGEN_VEG_RECOMMENDATIONS: dict[tuple[str, int], float] = {
