@@ -1,6 +1,6 @@
 # RB209 CLI Reference
 
-RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, lime, organic materials, and nitrogen application timing.
+RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, sodium, lime, organic materials, and nitrogen application timing.
 
 The tool supports 56 crop types across arable, grassland, potato, and vegetable categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
 
@@ -57,6 +57,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 1 --p-index 2 --k-index 1
 |   Potassium (K2O)      75 kg/ha                  |
 |   Magnesium (MgO)       0 kg/ha                  |
 |   Sulfur (SO3)         30 kg/ha                  |
+|   Sodium (Na2O)         0 kg/ha                  |
 +--------------------------------------------------+
 | K recommendation assumes straw removed.          |
 | Feed wheat variety. For milling wheat use winter |
@@ -75,6 +76,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
   "potassium": 75,
   "magnesium": 0,
   "sulfur": 30,
+  "sodium": 0,
   "notes": [
     "K recommendation assumes straw removed.",
     "Feed wheat variety. For milling wheat use winter-wheat-milling."
@@ -97,7 +99,7 @@ Use `--format json` when parsing output programmatically. JSON output uses `data
 
 ### recommend
 
-Full NPK + S + Mg nutrient recommendation for a crop.
+Full NPK + S + Mg + Na nutrient recommendation for a crop.
 
 **Usage:**
 
@@ -134,6 +136,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 |   Potassium (K2O)      75 kg/ha                  |
 |   Magnesium (MgO)       0 kg/ha                  |
 |   Sulfur (SO3)         30 kg/ha                  |
+|   Sodium (Na2O)         0 kg/ha                  |
 +--------------------------------------------------+
 | K recommendation assumes straw removed.          |
 | Feed wheat variety. For milling wheat use winter |
@@ -151,6 +154,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
   "potassium": 75,
   "magnesium": 0,
   "sulfur": 30,
+  "sodium": 0,
   "notes": [
     "K recommendation assumes straw removed.",
     "Feed wheat variety. For milling wheat use winter-wheat-milling."
@@ -168,6 +172,7 @@ $ rb209 recommend --crop winter-wheat-feed --sns-index 2 --p-index 2 --k-index 1
 | `potassium` | float | Potassium recommendation (kg K2O/ha) |
 | `magnesium` | float | Magnesium recommendation (kg MgO/ha) |
 | `sulfur` | float | Sulfur recommendation (kg SO3/ha) |
+| `sodium` | float | Sodium recommendation (kg Na2O/ha) |
 | `notes` | string[] | Advisory notes (may be empty) |
 
 **Notes:**
@@ -367,6 +372,67 @@ $ rb209 sulfur --crop winter-oilseed-rape
 **Notes:**
 - JSON schema is the same as [nitrogen](#nitrogen) (single nutrient format).
 - Sulfur recommendations are crop-specific and do not depend on a soil index.
+
+---
+
+### sodium
+
+Sodium (Na₂O) recommendation for a single crop. Sodium is only recommended for certain crops: sugar beet (Table 4.36, K-Index-dependent), asparagus (flat rate), and grassland (herbage mineral balance).
+
+**Usage:**
+
+```
+rb209 sodium --crop CROP [--k-index K_INDEX] [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--crop` | Yes | string | See [Crops](#crops) | -- | Crop type |
+| `--k-index` | No* | int | 0–9 | -- | Soil potassium index (*required for sugar beet) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (sugar beet):**
+
+```
+$ rb209 sodium --crop sugar-beet --k-index 0
++------------------------------+
+| Sodium (Na2O) — Sugar Beet   |
++------------------------------+
+|   Sodium (Na2O)   200 kg/ha  |
++------------------------------+
+```
+
+**Example (asparagus):**
+
+```
+$ rb209 sodium --crop veg-asparagus
++------------------------------------------------+
+| Sodium (Na2O) — Asparagus (subsequent years)   |
++------------------------------------------------+
+|   Sodium (Na2O)   500 kg/ha                    |
++------------------------------------------------+
+```
+
+**Example (grassland):**
+
+```
+$ rb209 sodium --crop grass-grazed
++---------------------------------------+
+| Sodium (Na2O) — Grass (grazed only)   |
++---------------------------------------+
+|   Sodium (Na2O)   140 kg/ha           |
++---------------------------------------+
+```
+
+**Notes:**
+- `--k-index` is required for sugar beet; ignored for other crops.
+- JSON schema is the same as [nitrogen](#nitrogen) (single nutrient format).
+- Crops without a quantitative sodium recommendation return 0 kg/ha.
+- Sugar beet rates: 200 at K Index 0–1, 100 at K Index 2, 0 at K Index 3+.
+- Asparagus (subsequent years): 500 kg Na₂O/ha. No sodium in establishment year.
+- Grassland: 140 kg Na₂O/ha for herbage mineral balance.
 
 ---
 

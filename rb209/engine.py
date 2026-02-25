@@ -46,6 +46,13 @@ from rb209.data.sns import (
     VEG_SMN_SNS_THRESHOLDS,
     VEG_SNS_ORGANIC_ADVISORY,
 )
+from rb209.data.sodium import (
+    SODIUM_FLAT_RATES,
+    SODIUM_GRASSLAND_CROPS,
+    SODIUM_GRASSLAND_RATE,
+    SODIUM_NOTES,
+    SODIUM_RECOMMENDATIONS,
+)
 from rb209.data.sulfur import SULFUR_RECOMMENDATIONS
 from rb209.data.timing import NITROGEN_TIMING_RULES
 from rb209.data.ber import BER_ADJUSTMENTS, CROP_BER_GROUP
@@ -711,6 +718,50 @@ def recommend_sulfur(crop: str) -> float:
     return SULFUR_RECOMMENDATIONS[crop]
 
 
+# ── Sodium ─────────────────────────────────────────────────────────
+
+def recommend_sodium(crop: str, k_index: int | None = None) -> float:
+    """Return sodium recommendation in kg Na₂O/ha.
+
+    Sodium is only recommended for certain crops:
+      - Sugar beet: rate depends on K Index (Table 4.36).
+      - Asparagus (subsequent years): flat rate of 500 kg Na₂O/ha.
+      - Grassland: 140 kg Na₂O/ha for herbage mineral balance.
+
+    For all other crops, returns 0.
+
+    Args:
+        crop: Crop value string.
+        k_index: Soil K index (required for sugar beet; ignored for
+            other crops).
+
+    Returns:
+        Sodium recommendation in kg Na₂O/ha.
+    """
+    _validate_crop(crop)
+
+    # Sugar beet: index-dependent recommendation
+    if crop in {c for (c, _) in SODIUM_RECOMMENDATIONS}:
+        if k_index is None:
+            raise ValueError(
+                f"k_index is required for sodium recommendation for '{crop}'"
+            )
+        _validate_index("K index", k_index, 0, 9)
+        clamped = _clamp_index(k_index, 4)
+        key = (crop, clamped)
+        return SODIUM_RECOMMENDATIONS.get(key, 0.0)
+
+    # Asparagus (subsequent years): flat rate
+    if crop in SODIUM_FLAT_RATES:
+        return SODIUM_FLAT_RATES[crop]
+
+    # Grassland: flat rate for herbage mineral balance
+    if crop in SODIUM_GRASSLAND_CROPS:
+        return SODIUM_GRASSLAND_RATE
+
+    return 0.0
+
+
 # ── Full recommendation ────────────────────────────────────────────
 
 def recommend_all(
@@ -748,6 +799,7 @@ def recommend_all(
     k = recommend_potassium(crop, k_index, straw_removed, expected_yield=expected_yield, k_upper_half=k_upper_half)
     mg = recommend_magnesium(mg_index, crop=crop)
     s = recommend_sulfur(crop)
+    na = recommend_sodium(crop, k_index=k_index)
 
     notes: list[str] = []
     info = CROP_INFO[crop]
@@ -869,6 +921,15 @@ def recommend_all(
             "N application timing guidance."
         )
 
+    # Sodium advisory notes
+    if na > 0 and crop in SODIUM_NOTES:
+        notes.extend(SODIUM_NOTES[crop])
+    elif na > 0 and info["category"] == "grassland" and "grassland" in SODIUM_NOTES:
+        notes.extend(SODIUM_NOTES["grassland"])
+    elif na == 0 and crop in SODIUM_NOTES:
+        # Advisory-only crops (e.g. asparagus establishment, celery)
+        notes.extend(SODIUM_NOTES[crop])
+
     return NutrientRecommendation(
         crop=info["name"],
         nitrogen=n,
@@ -876,6 +937,7 @@ def recommend_all(
         potassium=k,
         magnesium=mg,
         sulfur=s,
+        sodium=na,
         notes=notes,
     )
 

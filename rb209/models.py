@@ -112,6 +112,7 @@ class NutrientRecommendation:
     potassium: float      # kg K2O/ha
     magnesium: float      # kg MgO/ha
     sulfur: float         # kg SO3/ha
+    sodium: float = 0.0   # kg Na2O/ha
     notes: list[str] = field(default_factory=list)
 
 
