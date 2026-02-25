@@ -2,7 +2,7 @@
 
 RB209 is a command-line tool for calculating fertiliser recommendations for UK agricultural crops. It implements the recommendation tables from the RB209 9th edition (Defra/AHDB Nutrient Management Guide) covering nitrogen, phosphorus, potassium, magnesium, sulfur, sodium, lime, organic materials, and nitrogen application timing.
 
-The tool supports 56 crop types across arable, grassland, potato, and vegetable categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
+The tool supports 74 crop types across arable, grassland, potato, vegetable, and fruit categories. All output is available as human-readable ASCII tables (default) or machine-readable JSON.
 
 - **Entry points:** `rb209` (if installed) or `python -m rb209`
 - **Python:** 3.10+
@@ -519,6 +519,37 @@ This performs both the field assessment (cereals, heavy, high → SNS 1) and the
 
 ---
 
+### sns-smn
+
+Calculate the Soil Nitrogen Supply (SNS) index from a direct Soil Mineral Nitrogen (SMN) measurement using RB209 Table 4.10. This is the arable equivalent; for vegetable crops use `veg-smn` instead.
+
+**Usage:**
+
+```
+rb209 sns-smn --smn VALUE --crop-n VALUE [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `--smn` | Yes | float | >= 0 | -- | Soil Mineral Nitrogen (0–90 cm, kg N/ha) |
+| `--crop-n` | Yes | float | >= 0 | -- | Estimated crop N at sampling (kg N/ha) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example:**
+
+```
+$ rb209 sns-smn --smn 80 --crop-n 25
+```
+
+**Notes:**
+- The SNS value is calculated as `SMN + Crop N` and then converted to an SNS index using Table 4.10 thresholds.
+- JSON output uses the same `SNSResult` schema as the `sns` command, with `method="smn"`.
+- For vegetable crops, use the `veg-smn` command (Table 6.6 thresholds) instead.
+
+---
+
 ### sns-ley
 
 Calculate the Soil Nitrogen Supply (SNS) index from grass ley history using RB209 Table 4.6. Use this when the field has been in grass within the past three years, then compare the result with the field-assessment `sns` result and take the higher of the two indices.
@@ -766,6 +797,97 @@ $ rb209 veg-smn --smn 45 --depth 60
 - Only 30, 60, or 90 cm sampling depth is supported. Other values produce an error.
 - Use the resulting `sns_index` as the `--sns-index` argument to `recommend` or `nitrogen`.
 - For the arable equivalent (Table 4.10 thresholds), use the `sns-smn` command instead.
+
+---
+
+### fruit-recommend
+
+Full N/P/K/Mg recommendation for a fruit, vine or hop crop (RB209 Section 7). Fruit crops use a different nitrogen system from arable/vegetable crops: nitrogen is determined by soil category (4 groups) and orchard management (top fruit) or SNS index (strawberries), rather than SNS index alone.
+
+**Usage:**
+
+```
+rb209 fruit-recommend CROP --soil-category CAT --p-index N --k-index N --mg-index N [--orchard-management MGT] [--sns-index N] [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `crop` | Yes | positional | See [Fruit Crops](#fruit-crops) | -- | Fruit crop slug |
+| `--soil-category` / `-sc` | Yes | string | `light-sand`, `deep-silt`, `clay`, `other-mineral` | -- | Soil category for fruit/vine/hop nitrogen recommendation |
+| `--p-index` / `-p` | Yes | int | `0` to `9` | -- | Soil phosphorus index |
+| `--k-index` / `-k` | Yes | int | `0` to `9` | -- | Soil potassium index |
+| `--mg-index` / `-mg` | Yes | int | `0` to `9` | -- | Soil magnesium index |
+| `--orchard-management` / `-om` | No* | string | `grass-strip`, `overall-grass` | -- | Orchard management system (*required for top fruit) |
+| `--sns-index` / `-sns` | No* | int | `0` to `5` | -- | SNS index (*required for strawberry crops) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example (top fruit — dessert apple):**
+
+```
+$ rb209 fruit-recommend fruit-dessert-apple --soil-category light-sand --p-index 2 --k-index 1 --mg-index 2 --orchard-management grass-strip
+```
+
+**Example (soft fruit — raspberry):**
+
+```
+$ rb209 fruit-recommend fruit-raspberry --soil-category other-mineral --p-index 1 --k-index 1 --mg-index 0
+```
+
+**Example (strawberry — requires SNS index):**
+
+```
+$ rb209 fruit-recommend fruit-strawberry-main --soil-category light-sand --p-index 2 --k-index 2 --mg-index 1 --sns-index 1
+```
+
+**Example (hops):**
+
+```
+$ rb209 fruit-recommend fruit-hops --soil-category clay --p-index 2 --k-index 2 --mg-index 2
+```
+
+**Notes:**
+- JSON output uses the same `NutrientRecommendation` schema as the `recommend` command.
+- **Top fruit** (`fruit-dessert-apple`, `fruit-culinary-apple`, `fruit-pear`, `fruit-cherry`, `fruit-plum`) require `--orchard-management`. Grass-strip management gives lower N than overall-grass.
+- **Strawberries** (`fruit-strawberry-main`, `fruit-strawberry-ever`) require `--sns-index` (0–5). Use the `veg-sns` or `veg-smn` commands to determine the SNS index (Section 6 system).
+- **Hops** (`fruit-hops`) do not support `light-sand` soil category (not in RB209 Table 7.17); the command raises an error for this combination.
+- **Pre-planting** crops (`fruit-preplant`, `hops-preplant`) return 0 kg N/ha. P/K/Mg are looked up from Table 7.3.
+- P/K/Mg index clamping varies by crop group: top fruit and soft fruit clamp to 4; pre-planting and hops clamp to 5 (wider index range in Table 7.3/7.17).
+- Sulphur is 0 for all fruit crops (no routine recommendation; advisory note suggests 15–25 kg SO₃/ha where deficiency is recognised).
+- Sodium is 0 for all fruit crops.
+
+---
+
+### fruit-nitrogen
+
+Nitrogen-only recommendation for a fruit, vine or hop crop (RB209 Section 7).
+
+**Usage:**
+
+```
+rb209 fruit-nitrogen CROP --soil-category CAT [--orchard-management MGT] [--sns-index N] [--format FORMAT]
+```
+
+**Arguments:**
+
+| Argument | Required | Type | Valid Values | Default | Description |
+|----------|----------|------|--------------|---------|-------------|
+| `crop` | Yes | positional | See [Fruit Crops](#fruit-crops) | -- | Fruit crop slug |
+| `--soil-category` / `-sc` | Yes | string | `light-sand`, `deep-silt`, `clay`, `other-mineral` | -- | Soil category |
+| `--orchard-management` / `-om` | No* | string | `grass-strip`, `overall-grass` | -- | Orchard management system (*required for top fruit) |
+| `--sns-index` / `-sns` | No* | int | `0` to `5` | -- | SNS index (*required for strawberry crops) |
+| `--format` | No | string | `table`, `json` | `table` | Output format |
+
+**Example:**
+
+```
+$ rb209 fruit-nitrogen fruit-blackcurrant --soil-category deep-silt
+```
+
+**Notes:**
+- JSON schema is the same as [nitrogen](#nitrogen) (single nutrient format).
+- See `fruit-recommend` for full details on required parameters per crop group.
 
 ---
 
@@ -1147,7 +1269,7 @@ rb209 list-crops [--category CATEGORY] [--format FORMAT]
 
 | Argument | Required | Type | Valid Values | Default | Description |
 |----------|----------|------|--------------|---------|-------------|
-| `--category` | No | string | `arable`, `grassland`, `potatoes`, `vegetables` | -- | Filter to a single crop category |
+| `--category` | No | string | `arable`, `grassland`, `potatoes`, `vegetables`, `fruit` | -- | Filter to a single crop category |
 | `--format` | No | string | `table`, `json` | `table` | Output format |
 
 **Example (table, all crops — arable/grassland/potatoes shown; vegetable section truncated):**
@@ -1263,7 +1385,7 @@ Returns a JSON array of objects, each with `value`, `name`, and `category` field
 |-------|------|-------------|
 | `value` | string | CLI argument value to pass to `--crop` |
 | `name` | string | Human-readable display name |
-| `category` | string | One of `arable`, `grassland`, `potatoes`, `vegetables` |
+| `category` | string | One of `arable`, `grassland`, `potatoes`, `vegetables`, `fruit` |
 
 ---
 
@@ -1318,7 +1440,7 @@ Available Organic Materials
 
 ### Crops
 
-56 crops in 4 categories. Use the **Value** column as the `--crop` argument.
+74 crops in 5 categories. Use the **Value** column as the `--crop` argument.
 
 **Arable (15):**
 
@@ -1395,6 +1517,51 @@ Available Organic Materials
 | `veg-mint` | Mint (subsequent years) | |
 | `veg-courgettes-seedbed` | Courgettes (seedbed N) | Use with `veg-courgettes-topdress` |
 | `veg-courgettes-topdress` | Courgettes (top dressing N) | N only (75 kg/ha at SNS 0–3); P2O5, K2O applied at seedbed |
+
+**Fruit, Vines and Hops (18) — RB209 Section 7:**
+
+Use `fruit-recommend` for full N/P/K/Mg recommendations and `fruit-nitrogen` for nitrogen only.
+
+| Value | Display Name | Notes |
+|-------|-------------|-------|
+| `fruit-preplant` | Fruit and Vines (before planting) | No N; P/K/Mg by Index (Table 7.3) |
+| `hops-preplant` | Hops (before planting) | Potted hops: 70–80 kg N/ha in spring |
+| `fruit-dessert-apple` | Dessert Apples (established) | Requires `--orchard-management` |
+| `fruit-culinary-apple` | Culinary and Cider Apples (established) | Requires `--orchard-management` |
+| `fruit-pear` | Pears (established) | Requires `--orchard-management` |
+| `fruit-cherry` | Cherries (established) | Requires `--orchard-management` |
+| `fruit-plum` | Plums (established) | Requires `--orchard-management` |
+| `fruit-blackcurrant` | Blackcurrants (established) | Ben-series: 70–120 kg N/ha |
+| `fruit-redcurrant` | Redcurrants (established) | Sulphate of potash where K > 120 |
+| `fruit-gooseberry` | Gooseberries (established) | Sulphate of potash where K > 120 |
+| `fruit-raspberry` | Raspberries (established) | Sulphate of potash where K > 120 |
+| `fruit-loganberry` | Loganberries (established) | |
+| `fruit-tayberry` | Tayberries (established) | |
+| `fruit-blackberry` | Blackberries (established) | |
+| `fruit-strawberry-main` | Strawberries — Main Season (established) | Requires `--sns-index`; uses Section 6 SNS |
+| `fruit-strawberry-ever` | Strawberries — Everbearers (established) | Requires `--sns-index`; higher N than main |
+| `fruit-vine` | Vines (established) | Reduce N where growth is excessive |
+| `fruit-hops` | Hops (established) | No light-sand; split N 2–3 dressings |
+
+### Fruit Soil Categories
+
+Used by the `fruit-recommend` and `fruit-nitrogen` commands via `--soil-category`. Section 7 groups soils into 4 nitrogen-recommendation categories.
+
+| Value | Description |
+|-------|-------------|
+| `light-sand` | Light sand soils and shallow soils |
+| `deep-silt` | Deep silty soils |
+| `clay` | Deep clayey soils |
+| `other-mineral` | Medium soils, organic soils, peat soils |
+
+### Orchard Management
+
+Used by `fruit-recommend` and `fruit-nitrogen` via `--orchard-management`. Required for top fruit crops only (dessert apple, culinary apple, pear, cherry, plum).
+
+| Value | Description |
+|-------|-------------|
+| `grass-strip` | Grass alley with herbicide strip under trees — lower N |
+| `overall-grass` | Overall grass (or very weedy) management — higher N |
 
 ### Soil Types
 

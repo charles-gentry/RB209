@@ -1,8 +1,7 @@
 # TODO — Features Not Yet Implemented
 
 This file lists features from RB209 that are documented in the reference
-material but not yet implemented, along with recently completed items for
-reference.  See VEG.md for the original implementation plan.
+material but not yet implemented.
 
 ---
 
@@ -36,10 +35,6 @@ with no quantitative values to implement.
   are not populated in `NVZ_NMAX`.  The engine will not issue an N-max
   warning for vegetable crops that exceed typical thresholds.
 
-### ~~Sodium Recommendations~~ ✓
-- **Source**: RB209 Section 4 Table 4.36, Section 6, Section 3
-- **Status**: Implemented.  See Recently Completed section below.
-
 ### Leaf Analysis Tables
 - **Source**: RB209 Tables 6.10, 6.13, 6.15, 6.21, 6.23
 - **Status**: Out of scope — diagnostic reference tables only; no kg/ha
@@ -61,94 +56,34 @@ with no quantitative values to implement.
 
 ---
 
-## Other Sections — Pending
+## Fruit, Vines, and Hops (Section 7) — Pending
 
-### Section 7 — Fruit, Vines, and Hops
-- **Status**: Out of scope for the current implementation cycle.
-- Reference data is available in `ref/section7_fruit_vines_hops.md`.
+The core Section 7 fruit implementation is complete (all 18 crop slugs,
+full N/P/K/Mg recommendations, soil categories, pre-planting tables,
+orchard management options, strawberry SNS, and hops).
 
----
+### NVZ N-max Limits for Fruit Crops
+- **Source**: Defra Nitrate Pollution Prevention Regulations 2015, Schedule 8
+- **Status**: Blocked — Schedule 8 limits for fruit crop groups are not
+  reproduced in the `ref/` source files.
+- **Description**: Whole-farm N-max limits specific to fruit crop types
+  are not populated in `NVZ_NMAX`.
 
-## Recently Completed
+### Leaf and Fruit Analysis Tables
+- **Source**: RB209 Tables 7.11–7.15
+- **Status**: Out of scope — diagnostic reference tables only; no kg/ha
+  values to compute.
 
-### ~~Sodium (Na₂O) Recommendations~~ ✓
-- **Source**: RB209 Section 4 Table 4.36 (sugar beet), Section 6
-  (asparagus, celery), Section 3 (grassland)
-- **Status**: Implemented.  A new `rb209/data/sodium.py` data module and
-  `recommend_sodium()` engine function provide Na₂O recommendations for:
-  - **Sugar beet** — K-Index-dependent rates from Table 4.36: 200 kg Na₂O/ha
-    at K Index 0–1, 100 at K Index 2, 0 at K Index 3+.  Advisory notes cover
-    the 25 mg Na/l threshold at K2, fen peat/silt/clay exclusion, and seedbed
-    incorporation timing.
-  - **Asparagus (subsequent years)** — flat rate of 500 kg Na₂O/ha per year
-    (end of June).  Establishment year returns 0 with an advisory note.
-  - **Grassland** — 140 kg Na₂O/ha in early spring for herbage mineral
-    balance where Na < 0.15% DM or K:Na > 20:1.
-  - **Celery** — advisory note only (responsive on most soils except peat/fen
-    silt); no quantitative rate in RB209.
-  - Na₂O is included in the `NutrientRecommendation` model, in
-    `recommend_all()` output, in the `recommend` command's table and JSON
-    formats, and as a standalone `sodium` CLI command.
-  - 32 new tests in `tests/test_sodium.py`.
+### Substrate Strawberry Nutrient Solution
+- **Source**: RB209 Table 7.10
+- **Status**: Out of scope — mg/litre ranges for fertigation of
+  substrate-grown crops; outside the soil-applied kg/ha model.
 
-### ~~Organic Soil Vegetable SNS — Full Field Assessment~~ ✓
-- **Source**: RB209 Tables 6.2–6.4
-- **Status**: Implemented.  `calculate_veg_sns()` now provides a full field
-  assessment for organic and peat soils:
-  - A `VEG_SNS_ORGANIC_ADVISORY` lookup table in `rb209/data/sns.py` records
-    the advisory ranges verbatim from Tables 6.2–6.4: SNS Index 3–6 for
-    organic soils and SNS Index 4–6 for peat soils.
-  - The engine returns a representative mid-range index (4 for organic,
-    5 for peat) with `method="veg-field-assessment-advisory"` to distinguish
-    it from a calculated mineral-soil lookup.
-  - Three structured advisory notes are generated: (1) the specific range
-    from Tables 6.2–6.4, (2) a recommendation to use the `veg-smn` command
-    with a soil mineral nitrogen measurement for a site-specific index, and
-    (3) a reminder to consult a FACTS Qualified Adviser.
-  - Existing behaviour (advisory index, FACTS note) is preserved; the method
-    string and note wording are improved.
-
-### ~~Yield Adjustments for Vegetable Crops~~ ✓
-- **Source**: RB209 Table 6.27 (N baseline and uptake), Table 6.8 (P2O5/K2O offtake)
-- **Status**: Implemented in `rb209/data/yield_adjustments.py`.  19 vegetable
-  crop slugs added with `baseline_yield`, `n_adjust_per_t`, `p_adjust_per_t`,
-  and `k_adjust_per_t` parameters.  The N adjustment per tonne is derived from
-  `N_uptake / (baseline_yield × 0.60)` (linear approximation for small yield
-  changes, 60 % fertiliser recovery as per RB209 Section 6).  P2O5 and K2O
-  adjustments use the per-tonne offtake values from Table 6.8; where no
-  Table 6.8 entry exists those adjustments are 0.  Crops explicitly excluded
-  by the Table 6.27 footnote (insufficient data) remain out of scope:
-  asparagus, celery, peas/beans, sweetcorn, courgettes, and bulbs.
-
-### ~~Nitrogen Timing Rules for Vegetable Crops~~ ✓
-- **Source**: RB209 Section 6, per-crop notes
-- **Status**: Implemented in `rb209/data/timing.py`.  Timing rules cover:
-  - Asparagus establishment (three equal split dressings)
-  - Asparagus year 2 (single dressing by end-Feb/early-Mar)
-  - All seedbed-cap crops: ≤100 kg N/ha in seedbed; remainder as top
-    dressing after establishment (`fixed_amount` engine support added)
-  - Cauliflower winter split slugs (separate seedbed / top-dressing rules)
-  - Self-blanching celery (seedbed only; top-dressing note)
-  - Bulbs (single top dressing before emergence)
-  - Onions (bulb onions: seedbed cap; salad onions: single at sowing)
-  - Leeks (seedbed cap with NVZ closed-period note)
-  - Lettuce / rocket (single at transplanting with nitrate note)
-  - Mint (single in spring)
-  - N-fixing crops (peas, broad beans — not applicable note)
-
-### ~~Courgette Top-Dressing Amount~~ ✓
-- **Source**: RB209 Table 6.26
-- **Status**: Implemented.  `veg-courgettes-topdress` crop slug added.
-  Returns 75 kg N/ha at SNS 0–3, 0 at SNS 4–6.  P2O5 and K2O are 0
-  (applied at seedbed stage); S is 0.
-
-### ~~Section 6 Core Implementation~~ ✓
-- **Status**: Fully implemented across 11 implementation steps in VEG.md.
-  All 34 vegetable crop slugs are registered in `CROP_INFO` with full
-  N/P/K/Mg/S recommendation tables, SNS field-assessment and SMN-measurement
-  commands, K Index 2 split (`--k-upper-half`), advisory notes, and
-  471-test coverage.
+### Micronutrient Recommendations
+- **Source**: RB209 Section 7
+- **Status**: Out of scope — qualitative foliar-spray guidance only; no
+  kg/ha values to implement.
 
 ---
 
-*Last updated: 2026-02-25 (sodium recommendations implemented).*
+*Last updated: 2026-02-25.*
